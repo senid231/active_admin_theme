@@ -80,7 +80,26 @@ module ActiveAdminTheme
         reply(records.first(per_page).map { |record| result(controller, source, record) }, records.size > per_page)
       end
 
+      # The records an input on another resource's page may show as selected:
+      # the read scope of the resource that has the endpoint, narrowed by a
+      # `scope:` that takes no params. The page has no endpoint params for one
+      # that takes them.
+      def selected_scope(controller, resource, source, klass)
+        authorization = resource ? authorization_for(controller, resource) : controller.send(:active_admin_authorization)
+        return klass.none unless authorization.authorized?(ActiveAdmin::Authorization::READ, klass)
+
+        scope = source&.dig(:scope)
+        scope = scope&.arity&.zero? ? controller.instance_exec(&scope) : klass
+        authorization.scope_collection(scope.all, ActiveAdmin::Authorization::READ).all
+      end
+
       private
+
+      def authorization_for(controller, resource)
+        adapter = resource.namespace.authorization_adapter
+        adapter = adapter.constantize if adapter.is_a?(String)
+        adapter.new(resource, controller.send(:current_active_admin_user))
+      end
 
       def reply(results, more)
         {results: results, pagination: {more: more}}

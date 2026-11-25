@@ -21,19 +21,27 @@ module ActiveAdminTheme
       # association's whole table is never rendered into the page.
       def collection_from_association
         klass = searchable_select_class
+        source = searchable_select_source if klass
+        value = source ? source[:value] : klass&.primary_key
+        if value.respond_to?(:call)
+          raise ArgumentError, "searchable_select input :#{method} cannot find the selected record of searchable_select_options :#{source[:name]}: value: must be an attribute, not a lambda"
+        end
+
         values = Array(object.public_send(input_name)).flatten.compact_blank if object && klass
         return [] if values.blank?
 
-        source = searchable_select_source
-        value = source && !source[:value].respond_to?(:call) ? source[:value] : klass.primary_key
         label = options[:member_label] || source&.dig(:label)
-        klass.where(value => values).map do |record|
+        scope = ActiveAdminTheme::SearchableSelect.selected_scope(template.controller, searchable_select_resource, source, klass)
+        found = scope.where(value => values).map do |record|
           # Formtastic's own label_method reads the collection being built here.
           method = label || builder.collection_label_methods.find { |name| record.respond_to?(name) }
           # The endpoint runs a label lambda in its controller; so does the page.
           text = method.respond_to?(:call) ? template.controller.instance_exec(record, &method) : record.public_send(method)
           [text, record.public_send(value)]
         end
+        # A value the user may not read keeps its option, labelled with the
+        # value itself, so saving the form does not clear it.
+        found + (values.map(&:to_s) - found.map { |_, id| id.to_s }).map { |id| [id, id] }
       end
 
       private

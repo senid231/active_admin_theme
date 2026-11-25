@@ -405,19 +405,21 @@ end
 | `label:` | The first of Formtastic's label methods the record has (`display_name`, `name`, ...) | `label: :email` or `label: ->(customer) { "#{customer.id} | #{customer.name}" }` |
 | `search:` | The model's `search(term)` class method or scope when it has one, else `<label column>_cont` | `search: :name_or_email_cont` or `search: ->(scope, term) { scope.search_by_name(term) }` |
 | `allow_empty_search:` | `true` | `allow_empty_search: false`: a blank term returns nothing |
-| `value:` | `:id` | `value: :external_id` or a lambda taking the record |
+| `value:` | `:id` | `value: :external_id`, or a lambda taking the record for an endpoint that only `url:` inputs use |
 | `order:` | Primary key, descending | `order: :name` or `order: ->(scope) { scope.order(:position) }` |
 | `per_page:` | `50` | `per_page: 25` |
 | `additional_payload:` | none | `additional_payload: ->(customer) { {email: customer.email} }` |
 
 Lambdas run in the resource controller. An unknown option raises `ArgumentError`. The request's `per_page` overrides the page size up to 500, or up to the declared `per_page:` when that is larger.
 
-With `value:` other than the id, name the declaration in the input. The input then finds the selected record by that attribute:
+With `value:` other than the id, name the declaration in the input. The input then finds the selected record by that attribute. A lambda `value:` cannot be looked up, so an input that names such a declaration raises `ArgumentError`:
 
 ```ruby
 searchable_select_options :external_id, value: :external_id
 filter :account_external_id_eq, as: :searchable_select, resource: Account, options_name: :external_id
 ```
+
+The input looks up the selected records through the same read scope as the endpoint, and through `scope:` when it takes no params. A selected value the user may not read shows the value itself instead of the record's label.
 
 Names from [activeadmin-searchable_select](https://github.com/codevise/activeadmin-searchable_select) and from older hosts also work: `display_text:` for `label:`, `text_attribute:` for `label:` and the searched column, `filter:` for `search:` with a lambda taking `(term, scope)`, and `apply_search:` for `search:` with a lambda taking `(scope, term)`.
 
