@@ -47,6 +47,11 @@ module ActiveAdminTheme
       require "active_admin_theme/helpers/config"
     end
 
+    # Before any resource declares a sidebar.
+    initializer "active_admin_theme.sidebar_title" do
+      require "active_admin_theme/sidebar_title"
+    end
+
     # Before any resource registers its menu item.
     initializer "active_admin_theme.nested_menu" do
       require "active_admin_theme/nested_menu"

@@ -40,6 +40,17 @@ ActiveAdmin.register Shipment do
   filter :size, as: :select, collection: Shipment::SIZES, tom_select: false
   filter :insured
 
+  # A String name keeps its case; a Symbol name is titlecased.
+  sidebar "Estimated spend", only: :show do
+    para "Sentence case, as written."
+  end
+  sidebar :quick_notes, only: :show do
+    para "Titlecased."
+  end
+  sidebar "translated one", only: :show do
+    para "Named by I18n."
+  end
+
   index do
     id_column
     column :reference

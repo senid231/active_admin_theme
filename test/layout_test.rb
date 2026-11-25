@@ -156,6 +156,16 @@ class LayoutTest < Minitest::Test
     assert_operator lines, :>, 1
   end
 
+  def test_sidebar_title_keeps_a_string_name_and_titlecases_a_symbol
+    I18n.backend.store_translations(:en, active_admin: {sidebars: {translated_one: "From I18n"}})
+    visit "/admin/shipments/1"
+    assert_equal ["Estimated spend", "Quick Notes", "From I18n"], all("[data-aat-sidebar] .panel .panel-title").map(&:text)
+    visit "/admin/shipments"
+    assert_selector "[data-aat-sidebar] .panel .panel-title", exact_text: "Filters"
+  ensure
+    I18n.backend.reload!
+  end
+
   def test_show_page_and_sidebar_are_panels
     visit "/admin/customers/1"
     assert_selector ".panel .panel-title", text: "Customer Details"
