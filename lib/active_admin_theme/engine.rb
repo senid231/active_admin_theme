@@ -47,10 +47,6 @@ module ActiveAdminTheme
       require "active_admin_theme/nested_menu"
     end
 
-    rake_tasks do
-      load File.expand_path("../tasks/active_admin_theme.rake", __dir__)
-    end
-
     # Arbre's builder_method defines a method on a shared module, so a host
     # component with the same builder_method name replaces the theme's if it
     # loads later. The engine's to_prepare callback is registered before the
