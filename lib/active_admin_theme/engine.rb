@@ -36,8 +36,9 @@ module ActiveAdminTheme
       end
     end
 
-    # Before any host initializer, so a host that defines its own
-    # searchable_select_options includes it later and wins.
+    # The file leaves ActiveAdmin::ResourceDSL alone when it already has a
+    # searchable_select_options, so a host's own definition wins whether it
+    # loads before or after this initializer.
     initializer "active_admin_theme.resource_dsl" do
       require "active_admin_theme/resource_dsl/searchable_select"
     end

@@ -11,8 +11,20 @@ require "importmap-rails"
 # The gem under test. It requires active_admin first, then registers its engine.
 require "active_admin_theme"
 
+# test/host_dsl_test.rb: a host with a searchable_select_options of its own,
+# included before the theme's initializer or after it.
+if ENV["HOST_DSL"]
+  module HostSearchableSelect
+    def searchable_select_options(*, **)
+    end
+  end
+  ActiveAdmin::ResourceDSL.include HostSearchableSelect if ENV["HOST_DSL"] == "before"
+end
+
 module Dummy
   class Application < Rails::Application
+    initializer("dummy.host_dsl") { ActiveAdmin::ResourceDSL.include HostSearchableSelect } if ENV["HOST_DSL"] == "after"
+
     # Booted by requiring this file directly (not from test/dummy as cwd), so
     # pin the root or Rails looks for config/database.yml in the repo root.
     config.root = File.expand_path("..", __dir__)

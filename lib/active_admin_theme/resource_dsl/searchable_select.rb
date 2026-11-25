@@ -111,4 +111,6 @@ module ActiveAdminTheme
 end
 
 ActiveAdmin::Resource.include ActiveAdminTheme::SearchableSelect::ResourceExtension
-ActiveAdmin::ResourceDSL.include ActiveAdminTheme::SearchableSelect::ResourceDSL
+unless ActiveAdmin::ResourceDSL.method_defined?(:searchable_select_options)
+  ActiveAdmin::ResourceDSL.include ActiveAdminTheme::SearchableSelect::ResourceDSL
+end
