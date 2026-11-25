@@ -405,7 +405,7 @@ end
 | `label:` | The first of Formtastic's label methods the record has (`display_name`, `name`, ...) | `label: :email` or `label: ->(customer) { "#{customer.id} | #{customer.name}" }` |
 | `search:` | The model's `search(term)` class method or scope when it has one, else `<label column>_cont` | `search: :name_or_email_cont` or `search: ->(scope, term) { scope.search_by_name(term) }` |
 | `allow_empty_search:` | `true` | `allow_empty_search: false`: a blank term returns nothing |
-| `value:` | `:id` | `value: :external_id`, or a lambda taking the record for an endpoint that only `url:` inputs use |
+| `value:` | `:id` | `value: :external_id`, or a lambda taking the record. An input cannot show the selected record of a lambda. |
 | `order:` | Primary key, descending | `order: :name` or `order: ->(scope) { scope.order(:position) }` |
 | `per_page:` | `50` | `per_page: 25` |
 | `additional_payload:` | none | `additional_payload: ->(customer) { {email: customer.email} }` |
