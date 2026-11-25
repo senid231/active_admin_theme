@@ -310,6 +310,114 @@ In the top menu each deeper level flies out beside its item, and in the drawer i
 
 The header shows the site title, the top menu, a server clock, the dark mode switch, the current user, and a logout icon. They come from the signed-in user (`current_active_admin_user?`) and `config.logout_link_path`. Without a current user the header shows only the title, the menu, and the dark mode switch. To change the header, override `_header_actions.html.erb`, `_header_leading.html.erb`, or `_header_navigation.html.erb`.
 
+## Page objects
+
+The gem ships page objects for system specs, built on [active_admin_page_objects](https://github.com/senid231/active_admin_page_objects) 2.x. The theme never loads them, and does not depend on that gem: add it to your test group and require the entry point from your spec helper.
+
+```ruby
+# Gemfile
+group :test do
+  gem "active_admin_page_objects", github: "senid231/active_admin_page_objects"
+end
+
+# spec/rails_helper.rb
+require "active_admin_theme/page_objects"
+```
+
+The sections of active_admin_page_objects then work on theme pages. Their README describes them; this is what the theme changes and adds. The classes are in `ActiveAdminTheme::PageObjects`.
+
+### Patches to the base sections
+
+- `main_menu` is the top menu on desktop and the drawer on a narrow screen, at any depth. `labels`, `has_item?`, `current_labels` and `go` take a label path. `click` hovers each parent of the top menu; in the drawer it opens the drawer and each collapsed parent first.
+- `ActiveAdminPageObjects::Tabs` drives the theme's `tabs`. Every page has it as `tabs`.
+- `form.field(name)` and `filters.filter(name)` return the searchable select classes for a `searchable_select` input.
+- The header has no user menu, so `user_menu_button` is never found. Pages get `current_user`, `logout_link`, `server_clock`, `main_menu_button` and `sidebar_toggle` instead.
+
+```ruby
+page_object.main_menu.click("Customer", "Referral Program", "Payouts")
+page_object.main_menu.labels("Customer", "Referral Program") # => ["Payouts", "Rules"]
+
+show.tabs.titles # => ["Details", "History"]
+show.tabs.select("History")
+expect(show.tabs).to have_selected("History")
+show.tabs.content # the node of the selected tab; content("Details") for another
+```
+
+### Sidebar
+
+Every page has `sidebar`. Its sections are panels.
+
+```ruby
+index.sidebar.titles # => ["Filters"]
+show.sidebar.panel("Help").body
+index.collapse_sidebar
+index.expand_sidebar
+index.sidebar_collapsed?
+```
+
+### Searchable select
+
+`SearchableSelectField` and `SearchableSelectFilter` drive the widget and read the `<select>` it hides. They need a JavaScript driver. The widget loads its options a page at a time, so picking types the label into the search box first. Pass `search:` to type another text, or `search: false` to type nothing.
+
+```ruby
+customer = form.field(:customer)
+customer.fill("Acme") # choose is the same
+customer.fill("Acme", search: "acm")
+customer.selected # => "Acme"
+customer.chosen # => ["Acme"], every item of a multiple select
+customer.remove("Acme") # clear removes every item
+customer.placeholder
+expect(form).to have_disabled_field(:city) # a dependent select without its parent
+
+filter = filters.filter(:customer)
+filter.select_option("Acme")
+expect(filter).to have_item("Acme") # also have_selected and have_disabled
+filter.search("ac") # opens the dropdown and types
+expect(filter).to have_option("Acme") # what the open dropdown offers
+filter.options # the labels loaded so far
+filter.close
+```
+
+A multiple select takes an array in `fill`, and `select_option` once per label. In a section that declares its fields or filters, declare these classes: `field :customer, "Customer", ActiveAdminTheme::PageObjects::SearchableSelectField`.
+
+### Components
+
+A component is found inside any scope: a page, a section, a table cell or an attributes table row.
+
+```ruby
+include ActiveAdminTheme::PageObjects
+
+tag = StatusTag.find_in(index.table.row(order.id).cell(:status))
+tag.text # => "Shipped"
+tag.kind # => "shipped", its data-status
+tag.color # => "#b91c1c" with color:, or nil
+
+note = TruncateText.find_in(index.table.row(order.id).cell(:note))
+note.text # what the cell shows
+note.full_text # the whole value
+
+secret = SecretReveal.find_in(show.attributes_table.row(:token))
+secret.reveal # => "s3cr3t"; raises when the request fails
+secret.hide
+
+total = Tooltip.find_in(show.attributes_table.row(:total))
+total.tooltip # => "Total orders"
+
+PreWrap.find_in(show.panel("Payload")).lines
+
+row = Columns.find_in(show)
+row.weights # => [1, 3]
+row.columns.first # a section to look inside
+
+dialog = show.confirm_dialog("Reject") # by the text of its button
+dialog.open
+dialog.title # => "Reject order"
+dialog.fill("Reason" => "Fraud", "Notify the buyer" => true) # by field label
+dialog.confirm # or cancel
+```
+
+`all_in(scope)` returns every such component in the scope.
+
 ## Development
 
 ```sh
