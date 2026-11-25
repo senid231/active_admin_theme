@@ -113,16 +113,18 @@
   @apply mb-0.5 text-xs;
 }
 
-/* Action items are always buttons. */
+/* Action items are always buttons, the trigger of a confirm_dialog included. */
 #action-items > a,
 #action-items > button,
-#action-items > input[type="submit"] {
+#action-items > input[type="submit"],
+#action-items .aat-confirm-trigger {
   @apply inline-flex items-center rounded px-2.5 py-1 text-[13px] leading-5 no-underline cursor-pointer;
   background-color: var(--aat-button);
   color: var(--aat-button-text);
 }
 #action-items > a:hover,
-#action-items > button:hover {
+#action-items > button:hover,
+#action-items .aat-confirm-trigger:hover {
   filter: brightness(1.12);
 }
 

@@ -5,8 +5,7 @@ module ActiveAdminTheme
       # that return one, such as `action_item`:
       #
       #   action_item :reject, only: :show do
-      #     confirm_dialog_tag "Reject", title: "Reject order", url: reject_admin_order_path(resource),
-      #       trigger_html: {class: "action-item-button"}
+      #     confirm_dialog_tag "Reject", title: "Reject order", url: reject_admin_order_path(resource)
       #   end
       #
       # Takes the arguments of `confirm_dialog`. A block returns HTML to add

@@ -18,8 +18,8 @@ module ActiveAdminTheme
     # content after the fields. `params:` adds hidden fields, nested hashes and
     # arrays included. `trigger: false` renders the modal alone, to be opened by
     # an element with `data-modal-target` and `data-modal-show` set to its `id:`
-    # (the `confirm_dialog_trigger` helper renders one); `trigger_html:` adds
-    # attributes to the built-in button. Do not place it inside another form. Load
+    # (the `confirm_dialog_trigger` helper renders one); `class:` and
+    # `trigger_html:` add classes and attributes to the built-in button. Do not place it inside another form. Load
     # `active_admin_theme/confirm_dialog` (ActiveAdminTheme.javascripts) for focus
     # handling and field validation; texts come from
     # `active_admin_theme.confirm_dialog.*` with English defaults.
@@ -45,7 +45,7 @@ module ActiveAdminTheme
 
         if trigger
           html = (options[:trigger_html] || {}).dup
-          button trigger_text, **html, type: "button", class: ["aat-confirm-trigger", html[:class]].compact.join(" "),
+          button trigger_text, **html, type: "button", class: ["aat-confirm-trigger", options[:class], html[:class]].compact.join(" "),
                                        "aria-haspopup": "dialog", "data-modal-target": dialog_id, "data-modal-show": dialog_id
         end
         div id: dialog_id, class: "aat-confirm-modal", tabindex: "-1", role: "dialog", "aria-modal": "true",

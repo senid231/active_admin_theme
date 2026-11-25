@@ -6,8 +6,9 @@ ActiveAdmin.register_page "Confirm dialog" do
   # confirm_dialog_tag builds the component from a block that returns a string.
   action_item :suspend do
     confirm_dialog_tag "Suspend customer", id: "action-confirm", title: "Suspend customer?", url: "/admin/confirm_dialog/echo",
-                                           trigger_html: {class: "action-item-button"}
+                                           class: "action-item-button"
   end
+  action_item(:export) { link_to "Export customers", "#", class: "action-item-button" }
 
   page_action :echo, method: [:get, :post, :delete] do
     submitted = params.to_unsafe_h.except("authenticity_token", "_method", "controller", "action")

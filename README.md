@@ -265,7 +265,7 @@ confirm_dialog "Reject", title: "Reject order", message: "The buyer is notified.
 Field types are `:string`, `:text`, `:select`, and `:boolean`. More options:
 
 - `params:` adds hidden fields. Nested hashes and arrays become Rails' bracketed names.
-- `trigger_html:` adds attributes to the button, such as `{class: "action-item-button"}`.
+- `class:` adds classes to the button, and `trigger_html:` other attributes. Inside the action items the button looks like the other action items.
 - `trigger: false` renders the dialog without a button. It needs `id:`. Any element with `data-modal-target` and `data-modal-show` set to that id opens it; `confirm_dialog_trigger(text, id, **html_options)` renders such a button.
 
 ```ruby
@@ -278,8 +278,7 @@ text_node confirm_dialog_trigger("Merge", "merge")
 
 ```ruby
 action_item :reject, only: :show do
-  confirm_dialog_tag "Reject", title: "Reject order", url: reject_admin_order_path(resource),
-    trigger_html: {class: "action-item-button"}
+  confirm_dialog_tag "Reject", title: "Reject order", url: reject_admin_order_path(resource), class: "action-item-button"
 end
 ```
 
