@@ -210,25 +210,10 @@ module ActiveAdminTheme
         choose_option(root_element, label.to_s, search: search)
       end
     end
-
-    # `form.field(name)` and `filters.filter(name)` return the classes above
-    # for a `searchable_select` wrapper that declares no class. Prepended to
-    # the gem's form and filters, whose list of detected classes is private.
-    module SearchableSelectDetection
-      CLASSES = {
-        ActiveAdminPageObjects::Form => SearchableSelectField,
-        ActiveAdminPageObjects::Filters => SearchableSelectFilter
-      }.freeze
-
-      private
-
-      def detectable_classes
-        type = CLASSES.find { |host, _type| is_a?(host) }&.last
-        type ? super.merge("searchable_select" => type) : super
-      end
-    end
   end
 end
 
-ActiveAdminPageObjects::Form.prepend(ActiveAdminTheme::PageObjects::SearchableSelectDetection)
-ActiveAdminPageObjects::Filters.prepend(ActiveAdminTheme::PageObjects::SearchableSelectDetection)
+# `form.field(name)` and `filters.filter(name)` return these classes for an
+# input rendered `as: :searchable_select`, whose wrapper carries that class.
+ActiveAdminPageObjects.register_field_class("searchable_select", ActiveAdminTheme::PageObjects::SearchableSelectField)
+ActiveAdminPageObjects.register_filter_class("searchable_select", ActiveAdminTheme::PageObjects::SearchableSelectFilter)
