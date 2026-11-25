@@ -106,6 +106,7 @@ class ConfirmDialogTest < Minitest::Test
     within("[data-test-action-items]") { click_button "Suspend customer" }
     assert_selector "#action-confirm", visible: :visible
     assert_selector "button.aat-confirm-trigger.action-item-button", text: "Suspend customer"
+    assert_selector "#action-confirm p.suspend-note", text: "The customer cannot sign in until reactivated."
     # The trigger looks like the action items next to it.
     styles = %w[backgroundColor color fontSize paddingTop paddingLeft height].to_h do |property|
       [property, %w[.aat-confirm-trigger a].map { |target| page.evaluate_script("getComputedStyle(document.querySelector('#action-items #{target}')).#{property}") }]

@@ -3,10 +3,15 @@ module ActiveAdminTheme
     module ConfirmDialog
       # The confirm_dialog component as an HTML string, for ERB and for blocks
       # that return one, such as `action_item`. Takes the arguments of
-      # `confirm_dialog`; a block returns HTML to add after the fields.
+      # `confirm_dialog`; a block builds the body with Arbre tags, as the block
+      # of `confirm_dialog` does.
       def confirm_dialog_tag(trigger_text = nil, **options, &block)
         arguments = [trigger_text, options].compact
-        Arbre::Context.new({}, self) { confirm_dialog(*arguments, &block) }.to_s.html_safe
+        Arbre::Context.new({}, self) do
+          # Made here, so that the body runs with the Arbre context as self.
+          body = block && proc { instance_exec(&block) }
+          confirm_dialog(*arguments, &body)
+        end.to_s.html_safe
       end
 
       # A button that opens the confirm_dialog rendered with `id: dialog_id`

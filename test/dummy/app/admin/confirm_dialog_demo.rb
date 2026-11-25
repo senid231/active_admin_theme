@@ -3,10 +3,13 @@
 ActiveAdmin.register_page "Confirm dialog" do
   menu parent: "Demo pages", priority: 6
 
-  # confirm_dialog_tag builds the component from a block that returns a string.
+  # confirm_dialog_tag builds the component outside an Arbre view; its block
+  # body uses Arbre tags as confirm_dialog's does.
   action_item :suspend do
     confirm_dialog_tag "Suspend customer", id: "action-confirm", title: "Suspend customer?", url: "/admin/confirm_dialog/echo",
-                                           class: "action-item-button"
+                                           class: "action-item-button" do
+      para "The customer cannot sign in until reactivated.", class: "suspend-note"
+    end
   end
   action_item(:export) { link_to "Export customers", "#", class: "action-item-button" }
   action_item(:history) { link_to "Open history", "#", class: "action-item-button" }
