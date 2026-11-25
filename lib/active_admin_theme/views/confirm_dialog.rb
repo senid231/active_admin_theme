@@ -15,11 +15,7 @@ module ActiveAdminTheme
     # Renders a button and a Flowbite modal (data-modal-target / data-modal-show,
     # which ActiveAdmin already loads) holding a real form that submits to `url`
     # with the CSRF token, and `_method` for put/patch/delete. A block adds
-    # content after the fields. `params:` adds hidden fields, nested hashes and
-    # arrays included. `trigger: false` renders the modal alone, to be opened by
-    # an element with `data-modal-target` and `data-modal-show` set to its `id:`
-    # (the `confirm_dialog_trigger` helper renders one); `class:` and
-    # `trigger_html:` add classes and attributes to the built-in button. Do not place it inside another form. Load
+    # content after the fields. The README lists the other options. Do not place it inside another form. Load
     # `active_admin_theme/confirm_dialog` (ActiveAdminTheme.javascripts) for focus
     # handling and field validation; texts come from
     # `active_admin_theme.confirm_dialog.*` with English defaults.

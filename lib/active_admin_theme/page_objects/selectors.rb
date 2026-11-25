@@ -24,7 +24,7 @@ ActiveAdminPageObjects.register_selectors(
   searchable_select_option: ".ts-dropdown-content .option[data-value]:not(.loading-more-results)",
   searchable_select_item: ".ts-control .item",
   searchable_select_item_remove: ".remove",
-  searchable_select_loading: ".ts-wrapper.loading",
+  searchable_select_loading: ".ts-wrapper.loading, .ts-wrapper.searching",
   searchable_select_dropdown_content: ".ts-dropdown-content",
   searchable_select_create: ".ts-dropdown .create",
   searchable_select_message: ".ts-dropdown .no-results, .ts-dropdown .not-loading, .ts-dropdown .loading, .ts-dropdown .no-more-results",

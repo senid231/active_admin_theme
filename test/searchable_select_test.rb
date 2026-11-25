@@ -157,7 +157,7 @@ class SearchableSelectTest < Minitest::Test
     search(wrapper, text)
     # The previous query's single result can still be on screen until the new
     # response arrives, so wait for the option that matches.
-    assert_no_selector ".ts-wrapper.loading"
+    assert_no_selector ".ts-wrapper.loading, .ts-wrapper.searching"
     wrapper.assert_selector OPTION, count: 1, text: text
     wrapper.find(OPTION, text: text).click
     wrapper_for(name).assert_selector ".item", text: text

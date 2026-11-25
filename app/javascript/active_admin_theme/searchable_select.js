@@ -188,6 +188,7 @@ const lazySettings = (el, parent) => {
             state.ids = new Set()
             state.shown = query
             state.pending = null
+            if (this.control_input.value === query) this.wrapper.classList.remove("searching")
           }
           const results = data.results || []
           results.forEach((result) => state.ids.add(String(result.id)))
@@ -200,6 +201,7 @@ const lazySettings = (el, parent) => {
           if (el.tomselect !== this) return
           if (token !== state.token) return settle()
           state.pending = null
+          this.wrapper.classList.remove("searching")
           callback()
         })
     },
@@ -213,22 +215,41 @@ const lazySettings = (el, parent) => {
 }
 
 // Tom Select trims the input and remembers the queries it served. A lazy
-// select needs the raw input (three spaces) and a fresh first page whenever
-// the query is not the one on screen, such as after a backspace.
+// select needs the raw input (three spaces), and the first page for every
+// load that typing starts: only a scroll asks for the next page.
 const patchLazy = (el, select) => {
   const state = el.searchableSelectState
   const minChars = minCharsOf(el)
-  select.inputValue = () => select.control_input.value
+  const input = select.control_input
+  select.inputValue = () => input.value
+
+  let scrolling = false
+  const shouldLoadMore = select.settings.shouldLoadMore
+  select.settings.shouldLoadMore = function () {
+    scrolling = shouldLoadMore.call(this)
+    // The plugin calls load() in the same turn, or not at all.
+    setTimeout(() => { scrolling = false })
+    return scrolling
+  }
   const canLoad = select.canLoad.bind(select)
   select.canLoad = (query) => {
-    if (query !== state.shown && query !== state.pending) {
+    if (!scrolling && query !== state.pending) {
       select.clearPagination()
       delete select.loadedSearches[query]
     }
     return canLoad(query)
   }
-  select.on("type", (query) => { if (query.length < minChars) state.shown = null })
-  if (minChars === 0) select.on("focus", () => { if (state.shown === null) select.load("") })
+
+  // Set from the keystroke until the reply, which Tom Select's own `loading`
+  // class is not: it waits for the refresh throttle.
+  input.addEventListener("input", () => {
+    select.wrapper.classList.toggle("searching", input.value.length >= minChars && input.value !== state.shown)
+  })
+  if (minChars === 0) {
+    const browse = () => { if (input.value === "" && state.shown !== "" && state.pending !== "") select.load("") }
+    select.on("focus", browse)
+    select.on("dropdown_open", browse)
+  }
 }
 
 const settingsFor = (el, parent) => {

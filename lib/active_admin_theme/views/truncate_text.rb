@@ -6,10 +6,8 @@ module ActiveAdminTheme
     #
     # truncate_text(text, popup: true)             # full text in a popup on hover and focus
     #
-    # One line; the full value is in the `title` attribute. `max_width` is a
-    # number (pixels) or a number with px, rem, em, ch, % or vw. With
-    # `popup: true` the full value shows in a popup instead of the `title`: the
-    # element takes keyboard focus and names the popup in `aria-describedby`.
+    # One line; the full value is in the `title` attribute, or with `popup:` in
+    # a popup. `max_width` is a number (pixels) or a number with px, rem, em, ch, % or vw.
     class TruncateText < ActiveAdmin::Component
       builder_method :truncate_text
 

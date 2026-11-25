@@ -232,13 +232,50 @@ class SearchableSelectFeaturesTest < Minitest::Test
     assert_equal "Product 120 (SKU-381)", product.first(OPTION).text
   end
 
+  def test_typing_a_paged_query_again_starts_from_its_first_page
+    visit "/admin/shipments/new"
+    product = wrapper_for("shipment[product_id]")
+    open_dropdown(product)
+    search(product, "Product")
+    product.assert_selector OPTION, count: 50
+    # Closed and reopened: the same query is typed while its second page is still due.
+    page.execute_script("document.querySelector(\"select[name='shipment[product_id]']\").tomselect.blur()")
+    product.assert_no_selector ".ts-dropdown", visible: :visible
+    open_dropdown(product)
+    search(product, "Product")
+    assert_no_selector ".ts-wrapper.loading, .ts-wrapper.searching"
+    product.assert_selector OPTION, count: 50
+    assert_equal "Product 120 (SKU-381)", product.first(OPTION).text
+    scroll_dropdown_to_bottom
+    product.assert_selector OPTION, count: 100
+
+    # Three characters back and forth without a pause.
+    input = product.find(".dropdown-input")
+    input.send_keys(:backspace, :backspace, :backspace, "uct")
+    assert_no_selector ".ts-wrapper.loading, .ts-wrapper.searching"
+    product.assert_selector OPTION, minimum: 50
+    assert_equal "Product 120 (SKU-381)", product.first(OPTION).text
+  end
+
+  def test_browsing_select_shows_its_first_page_again_after_a_pick
+    visit "/admin/shipments/new"
+    pick("shipment[country_id]", "Country 05")
+    country = wrapper_for("shipment[country_id]")
+    open_dropdown(country)
+    country.assert_selector OPTION, minimum: 20
+  end
+
   def test_selected_items_survive_a_new_query
     visit "/admin/cities"
     country = wrapper_for("q[country_id_in][]")
     country.find(".ts-control").click
     country.find(".ts-control > input").send_keys("Country 05")
+    assert_no_selector ".ts-wrapper.loading, .ts-wrapper.searching"
+    country.assert_selector OPTION, count: 1
     country.find(OPTION, text: "Country 05").click
-    country.find(".ts-control > input").send_keys("Country 06")
+    # A multiple select keeps the typed text after a pick.
+    country.find(".ts-control > input").send_keys([:backspace] * 2, "06")
+    assert_no_selector ".ts-wrapper.loading, .ts-wrapper.searching"
     country.assert_selector OPTION, count: 1, text: "Country 06"
     country.find(OPTION, text: "Country 06").click
     assert_equal ["Country 05", "Country 06"], country.all(".item").map { |item| item.text.delete("×").strip }
@@ -371,7 +408,7 @@ class SearchableSelectFeaturesTest < Minitest::Test
     wrapper = wrapper_for(name)
     open_dropdown(wrapper)
     search(wrapper, text)
-    assert_no_selector ".ts-wrapper.loading"
+    assert_no_selector ".ts-wrapper.loading, .ts-wrapper.searching"
     wrapper.assert_selector OPTION, count: 1, text: text
     wrapper.find(OPTION, text: text).click
     wrapper_for(name).assert_selector ".item", text: text

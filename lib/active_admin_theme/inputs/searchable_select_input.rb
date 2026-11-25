@@ -92,7 +92,6 @@ end
 module ActiveAdminTheme
   module Inputs
     # f.input :status, as: :select, tom_select: {create: true, persist: false}
-    # filter :status, as: :select, tom_select: false
     #
     # `tom_select:` on any select input: a hash of Tom Select settings for this
     # select, true to upgrade it, false to leave it native.
