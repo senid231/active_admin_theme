@@ -27,6 +27,12 @@ ActiveAdmin.register_page "Confirm dialog" do
                                          url: "/admin/confirm_dialog/echo", confirm_text: "Archive"
     end
 
+    panel "Confirm with a link" do
+      confirm_dialog "Close account", id: "link-confirm", title: "Close account?", url: "/admin/confirm_dialog/echo" do
+        a "Read the closing policy", href: "#policy", class: "policy-link"
+      end
+    end
+
     panel "Confirm with fields" do
       confirm_dialog "Flag customer", id: "fields-confirm", title: "Flag customer", url: "/admin/confirm_dialog/echo",
                                       confirm_text: "Send",

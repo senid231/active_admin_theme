@@ -33,6 +33,17 @@ class ConfirmDialogTest < Minitest::Test
     assert_selector "#plain-confirm button.aat-confirm-cancel:focus"
   end
 
+  def test_tab_loop_reaches_a_link_in_the_body
+    open_dialog("link-confirm")
+    assert_selector "#link-confirm button.aat-confirm-cancel:focus"
+    page.send_keys([:shift, :tab])
+    assert_selector "#link-confirm a.policy-link:focus"
+    page.send_keys([:shift, :tab])
+    assert_selector "#link-confirm button.aat-confirm-submit:focus"
+    page.send_keys(:tab)
+    assert_selector "#link-confirm a.policy-link:focus"
+  end
+
   def test_cancel_closes_without_submitting
     open_dialog("plain-confirm")
     click_button "Cancel"

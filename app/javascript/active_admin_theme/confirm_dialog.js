@@ -3,7 +3,11 @@
 // attributes; this adds what it lacks: focus into the dialog and back to the
 // trigger, a Tab loop, a reset on close, and invalid-field marking. Listeners
 // sit on document, so it works for dialogs rendered at any time.
-const FOCUSABLE = "button:not([disabled]), input:not([type=hidden]):not([disabled]), select:not([disabled]), textarea:not([disabled])"
+const FOCUSABLE = [
+  "a[href]", "area[href]", "button:not([disabled])", "input:not([type=hidden]):not([disabled])",
+  "select:not([disabled])", "textarea:not([disabled])", "summary", "iframe", "[contenteditable]:not([contenteditable=false])",
+  "[tabindex]"
+].map((selector) => `${selector}:not([tabindex^="-"])`).join(", ")
 const openers = new WeakMap()
 
 const reset = (dialog) => {
