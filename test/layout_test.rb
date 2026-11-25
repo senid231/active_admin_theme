@@ -156,6 +156,27 @@ class LayoutTest < Minitest::Test
     assert_operator lines, :>, 1
   end
 
+  def test_action_items_sit_below_the_title_on_a_phone_and_beside_it_on_a_desktop
+    rect = ->(selector) { page.evaluate_script("document.querySelector(#{selector.to_json}).getBoundingClientRect().toJSON()") }
+    page.current_window.resize_to(390, 800)
+    visit "/admin/confirm_dialog"
+    assert_selector "#action-items > *", count: 4
+    title = rect.call("#page-header h2")
+    items = rect.call("#action-items")
+    assert_operator items["top"], :>=, title["bottom"]
+    assert_operator rect.call("#page-header > div")["width"], :>, 350
+    assert page.evaluate_script("(() => { const e = document.querySelector('#page-header h2'); return e.scrollWidth <= e.clientWidth })()")
+    assert_operator page.evaluate_script("document.documentElement.scrollWidth"), :<=, 390
+
+    page.current_window.resize_to(1280, 900)
+    visit "/admin/confirm_dialog"
+    title = rect.call("#page-header h2")
+    items = rect.call("#action-items")
+    assert_operator items["left"], :>, title["right"]
+    assert_operator items["top"], :<, title["bottom"]
+    assert_in_delta 1280 - 16, items["right"], 20
+  end
+
   def test_sidebar_title_keeps_a_string_name_and_titlecases_a_symbol
     I18n.backend.store_translations(:en, active_admin: {sidebars: {translated_one: "From I18n"}})
     visit "/admin/shipments/1"

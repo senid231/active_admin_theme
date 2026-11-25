@@ -9,6 +9,8 @@ ActiveAdmin.register_page "Confirm dialog" do
                                            class: "action-item-button"
   end
   action_item(:export) { link_to "Export customers", "#", class: "action-item-button" }
+  action_item(:history) { link_to "Open history", "#", class: "action-item-button" }
+  action_item(:notes) { link_to "Customer notes", "#", class: "action-item-button" }
 
   page_action :echo, method: [:get, :post, :delete] do
     submitted = params.to_unsafe_h.except("authenticity_token", "_method", "controller", "action")
