@@ -107,6 +107,18 @@ class LayoutTest < Minitest::Test
     assert_equal Time.zone.tzinfo.identifier, data["data-servertime-zone"]
   end
 
+  def test_server_clock_without_a_zone_keeps_the_server_text
+    visit "/admin/customers"
+    assert_selector "[data-server-clock] .clock-time", text: /\d{2}:\d{2}:\d{2}/
+    execute_script(<<~JS)
+      document.querySelector("[data-servertime]").removeAttribute("data-servertime-zone")
+      document.querySelector("[data-server-clock] .clock-time").textContent = "12:00:00 SRV"
+      document.dispatchEvent(new Event("turbo:load"))
+    JS
+    sleep 1.5
+    assert_equal "12:00:00 SRV", find("[data-server-clock] .clock-time").text
+  end
+
   def test_header_has_user_and_logout
     visit "/admin/customers"
     assert_selector "[data-test-current-user]", text: "Demo Admin"
