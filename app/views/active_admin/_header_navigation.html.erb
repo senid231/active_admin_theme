@@ -1,4 +1,4 @@
-<nav class="hidden md:flex items-center self-stretch" aria-label="<%= t('active_admin.toggle_main_navigation_menu') %>">
+<nav data-aat-main-menu class="hidden md:flex items-center self-stretch" aria-label="<%= t('active_admin.toggle_main_navigation_menu') %>">
   <ul role="list" class="flex items-stretch h-full text-[13px]">
     <% current_menu.items(self).each do |item| %>
       <% children = item.items(self).presence %>

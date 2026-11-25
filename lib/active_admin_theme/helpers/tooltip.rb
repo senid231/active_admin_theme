@@ -5,13 +5,14 @@ module ActiveAdminTheme
       # with_tooltip("42", "<b>Total</b> orders", html: true)
       #
       # A plain tooltip is a `title` attribute. With `html: true` the tooltip
-      # is sanitized HTML shown by ActiveAdmin's Flowbite tooltip.
+      # is sanitized HTML shown by ActiveAdmin's Flowbite tooltip. Both forms
+      # carry `data-aat-tooltip`, the hook of the page objects.
       def with_tooltip(content, tooltip, html: false)
-        return content_tag(:span, content, title: tooltip) unless html
+        return content_tag(:span, content, title: tooltip, "data-aat-tooltip": "") unless html
 
         id = "aat-tooltip-#{SecureRandom.hex(4)}"
         safe_join([
-          content_tag(:span, content, "data-tooltip-target": id),
+          content_tag(:span, content, "data-tooltip-target": id, "data-aat-tooltip": ""),
           content_tag(:div, sanitize(tooltip.to_s), id: id, role: "tooltip",
             class: "absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-xs opacity-0 tooltip dark:bg-gray-700")
         ])
