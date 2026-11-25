@@ -31,9 +31,9 @@ module ActiveAdminTheme
         root_element[:id] == "main-menu"
       end
 
-      # Flowbite slides the closed drawer off screen with this class.
+      # Flowbite marks the open drawer as a modal; closed, it is off screen.
       def drawer_closed?
-        class_names(root_element).include?("-translate-x-full")
+        root_element["aria-modal"] != "true"
       end
 
       def open_drawer

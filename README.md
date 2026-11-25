@@ -328,7 +328,7 @@ The sections of active_admin_page_objects then work on theme pages. Their README
 
 ### Patches to the base sections
 
-- `main_menu` is the top menu on desktop and the drawer on a narrow screen, at any depth. `labels`, `has_item?`, `current_labels` and `go` take a label path. `click` hovers each parent of the top menu; in the drawer it opens the drawer and each collapsed parent first.
+- `main_menu` is the top menu on desktop and the drawer on a narrow screen, at any depth. `labels`, `has_item?` and `go` take a label path, and `current_labels` returns one. `click` hovers each parent of the top menu; in the drawer it opens the drawer and each collapsed parent first.
 - `ActiveAdminPageObjects::Tabs` drives the theme's `tabs`. Every page has it as `tabs`.
 - `form.field(name)` and `filters.filter(name)` return the searchable select classes for a `searchable_select` input.
 - The header has no user menu, so `user_menu_button` is never found. Pages get `current_user`, `logout_link`, `server_clock`, `main_menu_button` and `sidebar_toggle` instead.
