@@ -7,3 +7,44 @@
   white-space: nowrap;
   vertical-align: bottom;
 }
+
+/*
+ * popup: true. The text is clipped by an inner element, so the popup can leave
+ * the box. The popup is fixed with no offsets: it stays where the flow puts it,
+ * below the text, and a scrolling ancestor such as an index table cannot clip it.
+ */
+.aat-truncate-has-popup {
+  overflow: visible;
+  cursor: default;
+}
+.aat-truncate-has-popup:focus-visible {
+  outline: 2px solid var(--aat-accent);
+  outline-offset: 1px;
+}
+.aat-truncate-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.aat-truncate-popup {
+  display: none;
+  position: fixed;
+  z-index: 50;
+  max-width: min(32rem, calc(100vw - 2rem));
+  margin-top: 0.25rem;
+  padding: 0.375rem 0.625rem;
+  border: 1px solid var(--aat-border);
+  border-radius: 0.25rem;
+  background-color: var(--aat-surface);
+  color: var(--aat-text);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.15);
+  font-weight: 400;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.aat-truncate-has-popup:hover > .aat-truncate-popup,
+.aat-truncate-has-popup:focus > .aat-truncate-popup,
+.aat-truncate-has-popup:focus-within > .aat-truncate-popup {
+  display: block;
+}

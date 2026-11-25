@@ -4,8 +4,12 @@ module ActiveAdminTheme
     # truncate_text(text, max_width: "12rem")       # width limit
     # truncate_text(text, length: 40)               # also cut to 40 characters
     #
+    # truncate_text(text, popup: true)             # full text in a popup on hover and focus
+    #
     # One line; the full value is in the `title` attribute. `max_width` is a
-    # number (pixels) or a number with px, rem, em, ch, % or vw.
+    # number (pixels) or a number with px, rem, em, ch, % or vw. With
+    # `popup: true` the full value shows in a popup instead of the `title`: the
+    # element takes keyboard focus and names the popup in `aria-describedby`.
     class TruncateText < ActiveAdmin::Component
       builder_method :truncate_text
 
@@ -19,15 +23,28 @@ module ActiveAdminTheme
         options = options.dup
         length = options.delete(:length)
         max_width = options.delete(:max_width)
+        popup = options.delete(:popup)
         text = text.to_s
         super(options)
         add_class "aat-truncate"
-        set_attribute :title, text if text.present? && !get_attribute(:title)
         set_attribute :style, [get_attribute(:style), "--aat-truncate-width:#{width(max_width)}"].compact.join(";") if max_width
-        text_node(length ? text.truncate(length) : text)
+        shown = length ? text.truncate(length) : text
+        return build_popup(shown, text) if popup && text.present?
+
+        set_attribute :title, text if text.present? && !get_attribute(:title)
+        text_node(shown)
       end
 
       private
+
+      def build_popup(shown, text)
+        popup_id = "aat-truncate-#{SecureRandom.hex(4)}"
+        add_class "aat-truncate-has-popup"
+        set_attribute :tabindex, "0"
+        set_attribute :"aria-describedby", popup_id
+        span shown, class: "aat-truncate-text"
+        span text, id: popup_id, role: "tooltip", class: "aat-truncate-popup"
+      end
 
       def width(value)
         value = value.is_a?(Numeric) ? "#{value}px" : value.to_s.strip

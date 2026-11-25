@@ -216,6 +216,12 @@ One line of text with an ellipsis and the full value in the `title` attribute:
 truncate_text(order.note, length: 40, max_width: "12rem")
 ```
 
+With `popup: true` the full value shows in a popup on hover and on keyboard focus, in place of the `title`. The element is focusable and names the popup in `aria-describedby`. The popup is CSS only, and a scrolling table does not clip it:
+
+```ruby
+truncate_text(order.note, max_width: "12rem", popup: true)
+```
+
 ### `with_tooltip`
 
 A plain `title` hint by default. With `html: true`, the tooltip is sanitized HTML shown by ActiveAdmin's Flowbite tooltip. The HTML tooltip is positioned inside its container, so a wrapper with `overflow` (a scrolling table) can clip it.
@@ -255,7 +261,26 @@ confirm_dialog "Reject", title: "Reject order", message: "The buyer is notified.
   ]
 ```
 
-Field types are `:string`, `:text`, `:select`, and `:boolean`.
+Field types are `:string`, `:text`, `:select`, and `:boolean`. More options:
+
+- `params:` adds hidden fields. Nested hashes and arrays become Rails' bracketed names.
+- `trigger_html:` adds attributes to the button, such as `{class: "action-item-button"}`.
+- `trigger: false` renders the dialog without a button. It needs `id:`. Any element with `data-modal-target` and `data-modal-show` set to that id opens it; `confirm_dialog_trigger(text, id, **html_options)` renders such a button.
+
+```ruby
+confirm_dialog id: "merge", trigger: false, title: "Merge customers?", url: merge_admin_customers_path,
+  params: {ids: [3, 4], options: {keep: "newest"}}
+text_node confirm_dialog_trigger("Merge", "merge")
+```
+
+`confirm_dialog_tag` takes the same arguments and returns HTML, for ERB and for blocks that return a string, such as `action_item`:
+
+```ruby
+action_item :reject, only: :show do
+  confirm_dialog_tag "Reject", title: "Reject order", url: reject_admin_order_path(resource),
+    trigger_html: {class: "action-item-button"}
+end
+```
 
 ### Searchable select
 
@@ -394,7 +419,9 @@ tag.color # => "#b91c1c" with color:, or nil
 
 note = TruncateText.find_in(index.table.row(order.id).cell(:note))
 note.text # what the cell shows
-note.full_text # the whole value
+note.full_text # the whole value, from the title or the popup
+note.popup? # rendered with popup: true
+note.show_popup # hovers and returns the popup text
 
 secret = SecretReveal.find_in(show.attributes_table.row(:token))
 secret.reveal # => "s3cr3t"; raises when the request fails
@@ -414,6 +441,10 @@ dialog.open
 dialog.title # => "Reject order"
 dialog.fill("Reason" => "Fraud", "Notify the buyer" => true) # by field label
 dialog.confirm # or cancel
+
+merge = show.confirm_dialog(dialog: "merge") # by the id of a dialog with trigger: false
+merge.params # => {"ids[]" => "4", "options[keep]" => "newest"}, the hidden fields by name
+merge.open # clicks the element of the page that points at the dialog
 ```
 
 `all_in(scope)` returns every such component in the scope.

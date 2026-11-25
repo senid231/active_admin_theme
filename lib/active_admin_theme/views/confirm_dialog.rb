@@ -1,3 +1,5 @@
+require_relative "../helpers/confirm_dialog"
+
 module ActiveAdminTheme
   module Views
     # confirm_dialog "Reject", title: "Reject order", message: "The buyer is notified.",
@@ -8,10 +10,16 @@ module ActiveAdminTheme
     #     {name: :notify, label: "Notify the buyer", as: :boolean, value: true}
     #   ]
     #
+    # confirm_dialog title: "Reject order", url: "/admin/orders/1/reject", id: "reject-order", trigger: false
+    #
     # Renders a button and a Flowbite modal (data-modal-target / data-modal-show,
     # which ActiveAdmin already loads) holding a real form that submits to `url`
     # with the CSRF token, and `_method` for put/patch/delete. A block adds
-    # content after the fields. Do not place it inside another form. Load
+    # content after the fields. `params:` adds hidden fields, nested hashes and
+    # arrays included. `trigger: false` renders the modal alone, to be opened by
+    # an element with `data-modal-target` and `data-modal-show` set to its `id:`
+    # (the `confirm_dialog_trigger` helper renders one); `trigger_html:` adds
+    # attributes to the built-in button. Do not place it inside another form. Load
     # `active_admin_theme/confirm_dialog` (ActiveAdminTheme.javascripts) for focus
     # handling and field validation; texts come from
     # `active_admin_theme.confirm_dialog.*` with English defaults.
@@ -24,20 +32,29 @@ module ActiveAdminTheme
         "span"
       end
 
-      def build(trigger_text, options = {})
+      def build(trigger_text = nil, options = {})
+        trigger_text, options = nil, trigger_text if trigger_text.is_a?(Hash)
         super(class: "aat-confirm")
+        trigger = options.fetch(:trigger, true)
+        raise ArgumentError, "confirm_dialog with trigger: false needs id:" unless trigger || options[:id]
+        raise ArgumentError, "confirm_dialog needs the text of its button, or trigger: false" if trigger && trigger_text.nil?
+
         dialog_id = (options[:id] || "aat-confirm-#{object_id}").to_s
         get = options.fetch(:method, :post).to_s.downcase == "get"
         body = nil
 
-        button trigger_text, type: "button", class: "aat-confirm-trigger", "aria-haspopup": "dialog",
-                             "data-modal-target": dialog_id, "data-modal-show": dialog_id
+        if trigger
+          html = (options[:trigger_html] || {}).dup
+          button trigger_text, **html, type: "button", class: ["aat-confirm-trigger", html[:class]].compact.join(" "),
+                                       "aria-haspopup": "dialog", "data-modal-target": dialog_id, "data-modal-show": dialog_id
+        end
         div id: dialog_id, class: "aat-confirm-modal", tabindex: "-1", role: "dialog", "aria-modal": "true",
             "aria-hidden": "true", "aria-labelledby": "#{dialog_id}-title",
             "aria-describedby": (options[:message] ? "#{dialog_id}-message" : nil) do
           div class: "aat-confirm-panel" do
             form action: options.fetch(:url), method: (get ? "get" : "post"), class: "aat-confirm-form", "accept-charset": "UTF-8" do
               build_hidden_inputs(options) unless get
+              build_params(options[:params]) if options[:params].present?
               h2 options.fetch(:title), id: "#{dialog_id}-title", class: "aat-confirm-title"
               para options[:message], id: "#{dialog_id}-message", class: "aat-confirm-message" if options[:message]
               body = div(class: "aat-confirm-body") do
@@ -67,6 +84,14 @@ module ActiveAdminTheme
         input type: "hidden", name: "authenticity_token", value: form_authenticity_token
         verb = options.fetch(:method, :post).to_s.downcase
         input type: "hidden", name: "_method", value: verb unless verb == "post"
+      end
+
+      # to_query flattens nested hashes and arrays into Rails' bracketed names.
+      def build_params(params)
+        params.to_query.split("&").each do |pair|
+          name, value = pair.split("=", 2).map { |part| CGI.unescape(part.to_s) }
+          input type: "hidden", name: name, value: value, "data-aat-confirm-param": ""
+        end
       end
 
       def build_field(dialog_id, field)

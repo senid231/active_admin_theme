@@ -69,6 +69,47 @@ class ConfirmDialogTest < Minitest::Test
     assert_text "DELETE"
   end
 
+  def test_trigger_false_renders_the_modal_alone_and_an_outside_button_opens_it
+    visit PAGE
+    assert_no_selector ".aat-confirm:has(#external-confirm) .aat-confirm-trigger", visible: :all
+    find("#external-trigger").click
+    assert_selector "#external-confirm", visible: :visible
+    assert_selector "#external-confirm button.aat-confirm-cancel:focus"
+    click_button "Cancel"
+    assert_no_selector "#external-confirm", visible: :visible
+    assert_selector "#external-trigger:focus"
+  end
+
+  def test_trigger_false_needs_an_id
+    error = assert_raises(ArgumentError) { render_dialog(title: "No id", url: "/x", trigger: false) }
+    assert_match(/needs id/, error.message)
+  end
+
+  def test_params_submit_as_hidden_fields
+    visit PAGE
+    find("#external-trigger").click
+    click_button "Confirm"
+    assert_text "POST"
+    assert_text '"source":"list"'
+    assert_text '"ids":["3","4"]'
+    assert_text '"options":{"keep":"newest"}'
+  end
+
+  def test_params_submit_with_a_get_form
+    open_dialog("get-confirm")
+    click_button "Confirm"
+    assert_text 'GET {"scope":"active"}'
+  end
+
+  def test_helper_renders_the_dialog_in_an_action_item
+    visit PAGE
+    within("[data-test-action-items]") { click_button "Suspend customer" }
+    assert_selector "#action-confirm", visible: :visible
+    assert_selector "button.aat-confirm-trigger.action-item-button", text: "Suspend customer"
+    click_button "Confirm"
+    assert_text "POST"
+  end
+
   def test_required_field_blocks_submit
     open_dialog("fields-confirm")
     click_button "Send"
@@ -95,6 +136,11 @@ class ConfirmDialogTest < Minitest::Test
     click_button "Cancel"
     find("[data-modal-target='fields-confirm']").click
     assert_equal "", find("#fields-confirm-reason").value
+  end
+
+  def render_dialog(**options)
+    view = ActionView::Base.empty
+    Arbre::Context.new({}, view) { confirm_dialog(options) }.to_s
   end
 
   def test_fits_a_phone_and_follows_dark_mode

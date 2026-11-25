@@ -3,10 +3,11 @@ module ActiveAdminTheme
     # Included into ActiveAdminPageObjects::Layout, so every page gets the
     # lookups of the theme's components and the sidebar switch.
     module Layout
-      # The confirm dialog whose trigger button reads +trigger+, or the only one.
+      # The confirm dialog whose trigger button reads +trigger+, the one whose
+      # modal has the id +dialog+, or the only one.
       # @return [ConfirmDialog]
-      def confirm_dialog(trigger = nil)
-        ConfirmDialog.find_in(self, trigger)
+      def confirm_dialog(trigger = nil, dialog: nil)
+        ConfirmDialog.find_in(self, trigger, dialog: dialog)
       end
 
       # Hides the sidebar with the switch next to the page title (desktop).

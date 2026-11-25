@@ -7,17 +7,25 @@ module ActiveAdminTheme
     #   dialog.open
     #   dialog.fill("Reason" => "Chargeback", "Notify customer" => true)
     #   dialog.confirm
+    #
+    # A dialog rendered with `trigger: false` is found by its id, and `open`
+    # clicks the element of the page that points at it:
+    #
+    #   page_object.confirm_dialog(dialog: "reject-order").open
     class ConfirmDialog < Component
       selector_key :confirm_dialog
 
       class << self
         # The dialog inside +scope+ whose trigger button reads +trigger+
-        # (case-insensitive), or the only dialog when +trigger+ is nil.
-        def find_in(scope, trigger = nil, **options)
-          return super(scope, **options) if trigger.nil?
+        # (case-insensitive), the one whose modal has the id +dialog+, or the
+        # only dialog when both are nil.
+        def find_in(scope, trigger = nil, dialog: nil, **options)
+          return super(scope, **options) if trigger.nil? && dialog.nil?
 
-          node = scope.find(*default_search_arguments, **options) do |dialog|
-            button = dialog.first(:active_admin, :confirm_dialog_trigger, minimum: 0, wait: false)
+          node = scope.find(*default_search_arguments, **options) do |root|
+            next root.has_css?("#{ActiveAdminPageObjects.selector(:confirm_dialog_modal)}[id='#{dialog}']", visible: :all, wait: false) if dialog
+
+            button = root.first(:active_admin, :confirm_dialog_trigger, minimum: 0, wait: false)
             button && ActiveAdminPageObjects.same_text?(button.text, trigger)
           end
           new(scope, node)
@@ -27,14 +35,33 @@ module ActiveAdminTheme
       # The text of the trigger button.
       # @return [String]
       def trigger_text
-        find(:active_admin, :confirm_dialog_trigger).text.strip
+        trigger.text.strip
+      end
+
+      # The id of the modal.
+      # @return [String]
+      def dialog_id
+        find(:active_admin, :confirm_dialog_modal, visible: :all)[:id]
+      end
+
+      # The button that opens the dialog: the component's own, or with
+      # `trigger: false` the element of the page that points at the modal.
+      def trigger
+        own = first(:active_admin, :confirm_dialog_trigger, minimum: 0, wait: false)
+        own || root_element.session.find("[data-modal-show='#{dialog_id}'], [data-modal-toggle='#{dialog_id}']")
       end
 
       # Clicks the trigger and waits for the dialog.
       def open
-        find(:active_admin, :confirm_dialog_trigger).click unless open?
+        trigger.click unless open?
         modal
         self
+      end
+
+      # The hidden fields of `params:`, by name.
+      # @return [Hash{String => String}]
+      def params
+        all(:active_admin, :confirm_dialog_param, visible: :all, wait: false).to_h { |input| [input[:name], input.value] }
       end
 
       # True when the dialog is on screen. Does not wait.

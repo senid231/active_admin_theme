@@ -69,6 +69,30 @@ class ComponentsTest < Minitest::Test
     assert_in_delta 128, page.evaluate_script("document.querySelector('#truncate-narrow .aat-truncate').getBoundingClientRect().width"), 1
   end
 
+  def test_truncate_text_popup_shows_the_full_text_on_hover_and_focus
+    host = "#truncate-popup .aat-truncate"
+    assert_no_selector "#{host}[title]"
+    assert_selector "#{host}[tabindex='0'][aria-describedby]"
+    popup_id = find(host)["aria-describedby"]
+    assert_selector "##{popup_id}[role=tooltip]", visible: :hidden, text: "so it is cut"
+    assert page.evaluate_script("(() => { const e = document.querySelector('#truncate-popup .aat-truncate-text'); return e.scrollWidth > e.clientWidth })()")
+
+    find(host).hover
+    assert_selector "##{popup_id}", visible: :visible, text: "A long sentence that does not fit in the space it is given, so it is cut."
+    # Wider than the scrolling box around it, and still whole on screen.
+    box = page.evaluate_script("document.querySelector('#truncate-popup').getBoundingClientRect().toJSON()")
+    popup = page.evaluate_script("document.getElementById('#{popup_id}').getBoundingClientRect().toJSON()")
+    text = page.evaluate_script("document.querySelector('#truncate-popup .aat-truncate-text').getBoundingClientRect().toJSON()")
+    assert_operator popup["width"], :>, box["width"]
+    assert_operator popup["top"], :>=, text["bottom"]
+    assert page.evaluate_script("(() => { const p = document.getElementById('#{popup_id}'); const r = p.getBoundingClientRect(); const hit = document.elementFromPoint(r.right - 4, r.bottom - 4); return hit === p })()")
+
+    find("#truncate-default").hover
+    assert_no_selector "##{popup_id}", visible: :visible
+    page.execute_script("document.querySelector(arguments[0]).focus()", host)
+    assert_selector "##{popup_id}", visible: :visible
+  end
+
   def test_truncate_text_length_cuts_the_text
     assert_selector "#truncate-length .aat-truncate", text: "A long sentence t..."
     assert_match(/so it is cut/, find("#truncate-length .aat-truncate")[:title])

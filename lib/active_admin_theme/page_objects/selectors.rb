@@ -35,6 +35,7 @@ ActiveAdminPageObjects.register_selectors(
   confirm_dialog_title: ".aat-confirm-title",
   confirm_dialog_message: ".aat-confirm-message",
   confirm_dialog_field: ".aat-confirm-field",
+  confirm_dialog_param: "input[data-aat-confirm-param]",
   confirm_dialog_cancel: ".aat-confirm-cancel",
   confirm_dialog_submit: ".aat-confirm-submit",
 
@@ -44,6 +45,7 @@ ActiveAdminPageObjects.register_selectors(
 
   status_tag: ".status-tag",
   truncate_text: ".aat-truncate",
+  truncate_text_popup: ".aat-truncate-popup",
   tooltip: "[data-aat-tooltip]",
   pre_wrap: "pre.aat-pre-wrap",
   columns: ".aat-columns"

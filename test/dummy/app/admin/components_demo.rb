@@ -30,6 +30,8 @@ ActiveAdmin.register_page "Components" do
       div(id: "truncate-default") { truncate_text long }
       div(id: "truncate-narrow") { truncate_text long, max_width: "8rem" }
       div(id: "truncate-length") { truncate_text long, length: 20 }
+      # Inside a scrolling box, as in an index table: the popup must not be clipped.
+      div(id: "truncate-popup", style: "overflow: auto; max-width: 12rem;") { truncate_text long, max_width: "8rem", popup: true }
     end
 
     panel "Secret reveal" do

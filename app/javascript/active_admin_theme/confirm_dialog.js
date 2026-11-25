@@ -25,9 +25,10 @@ const watchClose = (dialog) => {
 }
 
 document.addEventListener("click", (event) => {
-  const trigger = event.target.closest(".aat-confirm-trigger")
-  const dialog = trigger && document.getElementById(trigger.dataset.modalTarget)
-  if (!dialog) return
+  // The component's own button, or any element that opens the dialog by id.
+  const trigger = event.target.closest("[data-modal-show], [data-modal-toggle]")
+  const dialog = trigger && document.getElementById(trigger.dataset.modalShow || trigger.dataset.modalToggle)
+  if (!dialog || !dialog.matches(".aat-confirm-modal")) return
   openers.set(dialog, trigger)
   watchClose(dialog)
   // Flowbite's own click listener on the trigger shows the dialog first; wait a tick so it is visible.

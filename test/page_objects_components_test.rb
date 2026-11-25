@@ -35,6 +35,32 @@ class PageObjectsComponentsTest < PageObjectsTestCase
     refute Theme::TruncateText.find_in(components.find("#truncate-default")).cut?
   end
 
+  def test_truncate_text_reads_and_shows_its_popup
+    components = Pages::Components.new
+    components.load
+    plain = Theme::TruncateText.find_in(components.find("#truncate-default"))
+    refute plain.popup?
+    text = Theme::TruncateText.find_in(components.find("#truncate-popup"))
+    assert text.popup?
+    assert_match(/so it is cut\.\z/, text.full_text)
+    assert text.has_no_popup?(wait: false)
+    assert_equal text.full_text, text.show_popup
+    assert text.has_popup?
+  end
+
+  def test_confirm_dialog_without_a_trigger_is_found_by_its_id
+    dialogs = Pages::ConfirmDialogs.new
+    dialogs.load
+    dialog = dialogs.confirm_dialog(dialog: "external-confirm")
+    assert_equal "external-confirm", dialog.dialog_id
+    assert_equal({"source" => "list", "ids[]" => "4", "options[keep]" => "newest"}, dialog.params)
+    assert_equal "Merge customers", dialog.trigger_text
+    dialog.open
+    assert_equal "Merge customers?", dialog.title
+    dialog.cancel
+    assert dialog.has_no_open?
+  end
+
   def test_secret_reveal_shows_and_hides_the_value
     secret = Theme::SecretReveal.find_in(customer_show.attributes_table.row(:token))
     refute secret.revealed?
@@ -131,5 +157,6 @@ class PageObjectsComponentsTest < PageObjectsTestCase
     assert_text "DELETE {}"
     dialogs.load
     assert_raises(Capybara::Ambiguous) { dialogs.confirm_dialog }
+    assert_equal "Suspend customer", dialogs.confirm_dialog(dialog: "action-confirm").trigger_text
   end
 end
