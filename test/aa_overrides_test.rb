@@ -1,7 +1,7 @@
 # The theme replaces some of ActiveAdmin's own view files with its copies, so
 # ActiveAdmin's later fixes to those files never reach a host. This test records
 # a digest of each original as it was when the theme's copy was last reviewed,
-# and fails when the installed ActiveAdmin's original differs.
+# and fails when the installed ActiveAdmin's original differs or is gone.
 #
 # The record keeps one section per mode: app/views_compat is in use only with
 # an ActiveAdmin that lacks the layout hooks, and the hook partials exist only
@@ -51,8 +51,10 @@ class AaOverridesTest < Minitest::Test
     recorded = YAML.load_file(RECORD).fetch(mode, {})
     changed = digests.reject { |path, digest| recorded[path] == digest }.keys
     new_overrides = overridden - recorded.keys
+    removed = recorded.keys - overridden
 
     assert_empty changed, "ActiveAdmin changed files the theme replaces: #{changed.join(', ')}. Diff them against the theme's copies, port what applies, then run with UPDATE_AA_DIGESTS=1."
     assert_empty new_overrides, "New theme views replace ActiveAdmin files: #{new_overrides.join(', ')}. Record them with UPDATE_AA_DIGESTS=1."
+    assert_empty removed, "ActiveAdmin removed or renamed files the theme replaces: #{removed.join(', ')}. Move the theme's copies to the new names or delete them, then run with UPDATE_AA_DIGESTS=1."
   end
 end
