@@ -150,6 +150,19 @@ class LayoutTest < Minitest::Test
     assert_no_selector "#notes", visible: :visible
   end
 
+  def test_tabs_ids_are_unique_and_start_with_a_letter
+    visit "/admin/tabs"
+    ids = all("[id]", visible: :all).map { |element| element[:id] }
+    assert_equal ids.uniq, ids
+    assert_equal %w[summary tab-2024 explicit-1 summary-2 tab-2024-2 explicit-2], all(".aat-tab-panel", visible: :all).map { |panel| panel[:id] }
+    assert_empty all("[role=tab]", visible: :all).map { |tab| tab["data-tabs-target"] }.reject { |target| target.match?(/\A#[a-z]/) }
+    second = all(".aat-tabs")[1]
+    second.find("[role=tab]", text: "2024").click
+    assert_selector "#tab-2024-2", text: "Year 2", visible: :visible
+    assert_selector "#summary", text: "Summary 1", visible: :visible
+    assert_no_selector "#summary-2", visible: :visible
+  end
+
   def test_columns_split_by_ratio_and_stack_on_mobile
     visit "/admin/columns"
     widths = page.evaluate_script("[...document.querySelectorAll('.aat-columns')[0].children].map(c => c.getBoundingClientRect().width)")

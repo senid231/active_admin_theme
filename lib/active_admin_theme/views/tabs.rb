@@ -14,8 +14,30 @@ module ActiveAdminTheme
         super(options)
         add_class "aat-tabs"
         @tab_ids = []
-        @nav = ul(class: "aat-tabs-nav", role: "tablist", id: "#{object_id}-tabs", "data-tabs-toggle": "##{object_id}-panels")
-        @panels = div(id: "#{object_id}-panels")
+        base = Tabs.unique_id(helpers, "aat-tabs")
+        @nav = ul(class: "aat-tabs-nav", role: "tablist", id: "#{base}-nav", "data-tabs-toggle": "##{base}-panels")
+        @panels = div(id: "#{base}-panels")
+      end
+
+      # An id no other tab on the page has: two components may share titles.
+      # It starts with a letter, since Flowbite passes it to querySelector.
+      def self.unique_id(view, base)
+        base = "tab-#{base}" unless base.match?(/\A[a-z]/i)
+        id = base
+        number = 1
+        id = "#{base}-#{number += 1}" while taken_ids(view).include?(id)
+        claim_id(view, id)
+      end
+
+      # An explicit id is kept as given.
+      def self.claim_id(view, id)
+        taken_ids(view) << id
+        id
+      end
+
+      # Kept on the view, which renders the whole page.
+      def self.taken_ids(view)
+        view.instance_variable_get(:@aat_tab_ids) || view.instance_variable_set(:@aat_tab_ids, Set.new)
       end
 
       # An instance method, not a global builder_method, so `tab` stays free
@@ -48,7 +70,8 @@ module ActiveAdminTheme
 
     class Tab < ActiveAdmin::Component
       def build(title, options = {})
-        id = options.delete(:id) || title.to_s.parameterize.presence || "tab-#{object_id}"
+        id = options.delete(:id)
+        id = id ? Tabs.claim_id(helpers, id.to_s) : Tabs.unique_id(helpers, title.to_s.parameterize.presence || "tab")
         tabs = [parent, parent&.parent].find { |element| element.is_a?(Tabs) }
         first = tabs ? tabs.add_tab_button(title, id) : true
         super(options.merge(id: id, role: "tabpanel", "aria-labelledby": "#{id}-tab"))

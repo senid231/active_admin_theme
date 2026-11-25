@@ -190,7 +190,7 @@ tabs do
 end
 ```
 
-Tabs use Flowbite's tabs, which ActiveAdmin already loads.
+Tabs use Flowbite's tabs, which ActiveAdmin already loads. A tab's panel id is its parameterized title unless `id:` sets it. A title already used on the page gets `-2`, `-3` and so on, and an id that does not start with a letter gets a `tab-` prefix.
 
 ### `panel`
 
