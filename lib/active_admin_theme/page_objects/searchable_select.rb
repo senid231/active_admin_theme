@@ -1,9 +1,74 @@
 module ActiveAdminTheme
   module PageObjects
-    # Drives the `searchable_select` input: a Tom Select widget over a hidden
-    # <select>. SearchableSelectField and SearchableSelectFilter include it.
-    # The widget loads its options from the server, one page at a time, and the
-    # hidden <select> holds only the chosen ones. Needs a JavaScript driver.
+    # Prepended into the gem's SelectControl: every select field and filter
+    # drives the Tom Select widget when its select has one, and the native
+    # select otherwise (`tom_select: false`, or the script not loaded).
+    module TomSelectControl
+      private
+
+      # The widget hides its select; a select without a widget is found too.
+      def native_select_visibility
+        :all
+      end
+
+      def tom_select?(scope)
+        scope.has_css?(sel(:searchable_select), wait: false)
+      end
+
+      # True when the options come from an endpoint.
+      def remote_select?(scope)
+        scope.has_css?("select[data-searchable-select-url]", visible: :all, wait: false)
+      end
+
+      def choose_option(scope, label, search: nil)
+        return super(scope, label) unless tom_select?(scope)
+
+        pick_option(scope, label, search: search)
+      end
+
+      # Picks the option labelled +label+. In a select that loads its options
+      # the label is typed first; +search+ is another text to type, or false.
+      def pick_option(scope, label, search: nil)
+        dropdown = open_dropdown(scope)
+        text = search.nil? && remote_select?(scope) ? label : search
+        search_input(scope).send_keys(text) if text
+        # A reply still on its way would redraw the options under the click.
+        scope.assert_no_selector(sel(:searchable_select_loading))
+        dropdown.find(sel(:searchable_select_option), exact_text: label).click
+        scope.assert_selector(sel(:searchable_select_item)) { |item| item_label(item) == label }
+        close_dropdown(scope)
+      end
+
+      def open_dropdown(scope)
+        dropdown = sel(:searchable_select_dropdown)
+        scope.find(sel(:searchable_select_control)).click unless scope.has_css?(dropdown, visible: true, wait: false)
+        scope.find(dropdown, visible: true)
+      end
+
+      # A multiple select keeps its dropdown open after a pick, and it then
+      # covers what a spec clicks next, such as the filters' submit button.
+      # Tom Select's own blur closes it whatever element has the focus.
+      def close_dropdown(scope)
+        select = native_select(scope)
+        select.session.execute_script("arguments[0].tomselect && arguments[0].tomselect.blur()", select)
+        scope.assert_no_selector(sel(:searchable_select_dropdown), visible: true)
+      end
+
+      def search_input(scope)
+        scope.find(sel(:searchable_select_search), match: :first)
+      end
+
+      # Tom Select's remove_button plugin appends a link to each item, and its
+      # "×" is part of the item's text.
+      def item_label(item)
+        remove = item.all(sel(:searchable_select_item_remove), wait: false).map(&:text).join
+        item.text.delete_suffix(remove).strip
+      end
+    end
+
+    # The extra API of a Tom Select widget: searching, the dropdown's options
+    # and messages, creating an option, removing items. SearchableSelectField
+    # and SearchableSelectFilter include it. Needs a JavaScript driver.
     module SearchableSelect
       # Opens the dropdown, e.g. before `has_option?`.
       def open
@@ -26,6 +91,7 @@ module ActiveAdminTheme
       def search(text)
         open_dropdown(root_element)
         search_input(root_element).send_keys(text)
+        root_element.assert_no_selector(sel(:searchable_select_loading))
         self
       end
 
@@ -35,7 +101,40 @@ module ActiveAdminTheme
       def options
         dropdown = open_dropdown(root_element)
         dropdown.find(sel(:searchable_select_option), match: :first)
-        dropdown.all(sel(:searchable_select_option), wait: false).map { |option| option.text.strip }
+        option_labels(dropdown)
+      end
+
+      # Scrolls the open dropdown to its end and waits for the next page.
+      # @return [Array<String>] the labels loaded so far
+      def load_more
+        dropdown = open_dropdown(root_element)
+        loaded = option_labels(dropdown).size
+        content = dropdown.find(sel(:searchable_select_dropdown_content))
+        content.session.execute_script("arguments[0].scrollTop = arguments[0].scrollHeight", content)
+        dropdown.assert_selector(sel(:searchable_select_option), minimum: loaded + 1)
+        option_labels(dropdown)
+      end
+
+      # The message of the open dropdown: the hint to type more, "Loading...",
+      # no results. Nil when it shows none.
+      # @return [String, nil]
+      def message
+        open_dropdown(root_element).first(sel(:searchable_select_message), minimum: 0, wait: false)&.text&.strip
+      end
+
+      # True when the open dropdown shows the message +text+.
+      def has_message?(text)
+        root_element.has_css?(sel(:searchable_select_message), text: text)
+      end
+
+      # Types +text+ and picks the entry that adds it as a new option. For a
+      # select with `tom_select: {create: true}`.
+      def create_option(text)
+        dropdown = open_dropdown(root_element)
+        search_input(root_element).send_keys(text)
+        dropdown.find(sel(:searchable_select_create), text: text).click
+        root_element.assert_selector(sel(:searchable_select_item)) { |item| item_label(item) == text }
+        close_dropdown(root_element)
       end
 
       # True when the open dropdown offers +label+. Call #open or #search first.
@@ -66,9 +165,7 @@ module ActiveAdminTheme
 
       # Removes the chosen item labelled +label+.
       def remove(label)
-        item = item_node(label)
-        button = item.first(sel(:searchable_select_item_remove), minimum: 0, wait: false)
-        (button || clear_button).click
+        item_node(label).find(sel(:searchable_select_item_remove)).click
         root_element.assert_no_selector(sel(:searchable_select_item)) { |node| item_label(node) == label }
         close_dropdown(root_element)
       end
@@ -86,44 +183,12 @@ module ActiveAdminTheme
 
       private
 
-      # The hidden <select> is read for the selected options and the disabled state.
-      def native_select_visibility
-        :all
-      end
-
       def widget(scope)
         scope.find(sel(:searchable_select))
       end
 
-      def open_dropdown(scope)
-        dropdown = sel(:searchable_select_dropdown)
-        scope.find(sel(:searchable_select_control)).click unless scope.has_css?(dropdown, visible: true, wait: false)
-        scope.find(dropdown, visible: true)
-      end
-
-      # A multiple select keeps its dropdown open after a pick, and it then
-      # covers what a spec clicks next, such as the filters' submit button.
-      # Tom Select's own blur closes it whatever element has the focus.
-      def close_dropdown(scope)
-        select = native_select(scope)
-        select.session.execute_script("arguments[0].tomselect && arguments[0].tomselect.blur()", select)
-        scope.assert_no_selector(sel(:searchable_select_dropdown), visible: true)
-      end
-
-      def search_input(scope)
-        scope.find(sel(:searchable_select_search), match: :first)
-      end
-
-      # Picks the option labelled +label+. The label is typed into the search
-      # box first, because the option may be on a page that is not loaded yet.
-      # +search+ is another text to type, or false to type nothing.
-      def choose_option(scope, label, search: nil)
-        dropdown = open_dropdown(scope)
-        text = search.nil? ? label : search
-        search_input(scope).send_keys(text) if text
-        dropdown.find(sel(:searchable_select_option), exact_text: label).click
-        scope.assert_selector(sel(:searchable_select_item)) { |item| item_label(item) == label }
-        close_dropdown(scope)
+      def option_labels(dropdown)
+        dropdown.all(sel(:searchable_select_option), wait: false).map { |option| option.text.strip }
       end
 
       def option_offered?(scope, label)
@@ -142,26 +207,12 @@ module ActiveAdminTheme
         scope.has_no_css?(sel(:searchable_select_item)) { |item| item_label(item) == label }
       end
 
-      # Tom Select's remove_button plugin appends a link to each item of a
-      # multiple select, and its "×" is part of the item's text.
-      def item_label(item)
-        remove = item.all(sel(:searchable_select_item_remove), wait: false).map(&:text).join
-        item.text.delete_suffix(remove).strip
-      end
-
       def item_node(label)
         widget(root_element).find(sel(:searchable_select_item)) { |item| item_label(item) == label }
       end
-
-      # The clear button of a single select shows while the pointer is on the widget.
-      def clear_button
-        control = root_element.find(sel(:searchable_select_control))
-        control.hover
-        control.find(sel(:searchable_select_clear))
-      end
     end
 
-    # A `searchable_select` form input.
+    # A `searchable_select` form input, or any select field with the widget.
     #
     #   form.field(:customer).fill("Customer 17")
     #   form.field(:customer).fill("Customer 17", search: "17")
@@ -197,7 +248,7 @@ module ActiveAdminTheme
       end
     end
 
-    # A `searchable_select` filter.
+    # A `searchable_select` filter, or any select filter with the widget.
     #
     #   filters.filter(:customer).select_option("Customer 17")
     #   filters.filter(:customer).has_item?("Customer 17")
@@ -212,6 +263,8 @@ module ActiveAdminTheme
     end
   end
 end
+
+ActiveAdminPageObjects::SelectControl.prepend(ActiveAdminTheme::PageObjects::TomSelectControl)
 
 # `form.field(name)` and `filters.filter(name)` return these classes for an
 # input rendered `as: :searchable_select`, whose wrapper carries that class.

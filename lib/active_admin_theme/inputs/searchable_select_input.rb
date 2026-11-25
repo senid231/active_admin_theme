@@ -3,24 +3,10 @@ module ActiveAdminTheme
     # f.input :customer, as: :searchable_select
     # filter :customer, as: :searchable_select
     #
-    # Renders a <select> holding only the selected record(s); the
-    # active_admin_theme/searchable_select module upgrades it and loads the
-    # rest from the endpoint of a `searchable_select_options` declaration.
-    #
-    # Options:
-    #   url:                 endpoint (string, or lambda run in the view). Defaults to the
-    #                        options action of the association's resource.
-    #   resource:            model class or ActiveAdmin resource to take the endpoint (and,
-    #                        without an association, the selected records) from.
-    #   options_name:        which searchable_select_options to use, :all by default.
-    #   placeholder:         text shown while nothing is selected.
-    #   depends_on:          input method of the parent select, e.g. :country_id (form) or
-    #                        :country_id_eq (filter). The child stays disabled until the
-    #                        parent has a value, then sends it as `depends_param`.
-    #   depends_param:       query param carrying the parent value, `q[<depends_on>_eq]` by default.
-    #   depends_placeholder: text shown while the child waits for its parent.
+    # A <select> holding only the selected record(s); the script loads the rest
+    # from a `searchable_select_options` endpoint. The README lists the options.
     module SearchableSelectBehavior
-      OPTION_KEYS = %i[url resource options_name placeholder depends_on depends_param depends_placeholder].freeze
+      OPTION_KEYS = %i[url resource options_name placeholder depends_on depends_param depends_placeholder load_all min_chars per_page].freeze
 
       def formtastic_options
         super + OPTION_KEYS
@@ -38,7 +24,16 @@ module ActiveAdminTheme
         values = Array(object.public_send(input_name)).flatten.compact_blank if object && klass
         return [] if values.blank?
 
-        klass.where(klass.primary_key => values)
+        source = searchable_select_source
+        value = source && !source[:value].respond_to?(:call) ? source[:value] : klass.primary_key
+        label = options[:member_label] || source&.dig(:label)
+        klass.where(value => values).map do |record|
+          # Formtastic's own label_method reads the collection being built here.
+          method = label || builder.collection_label_methods.find { |name| record.respond_to?(name) }
+          # The endpoint runs a label lambda in its controller; so does the page.
+          text = method.respond_to?(:call) ? template.controller.instance_exec(record, &method) : record.public_send(method)
+          [text, record.public_send(value)]
+        end
       end
 
       private
@@ -46,6 +41,9 @@ module ActiveAdminTheme
       def searchable_select_data
         data = {searchable_select: true, searchable_select_url: searchable_select_url}
         data[:placeholder] = options[:placeholder] if options[:placeholder]
+        data[:searchable_select_load_all] = true if options[:load_all]
+        data[:searchable_select_min_chars] = options[:min_chars] if options[:min_chars]
+        data[:searchable_select_per_page] = options[:per_page] if options[:per_page]
         if (parent = options[:depends_on])
           data[:searchable_select_parent_name] = "#{object_name}[#{parent}]"
           data[:searchable_select_parent_param] = options[:depends_param] || (Ransack::Predicate.detect_from_string(parent.to_s) ? "q[#{parent}]" : "q[#{parent}_eq]")
@@ -63,6 +61,13 @@ module ActiveAdminTheme
         raise ArgumentError, "searchable_select input :#{method} needs url: or an association to a registered resource" unless resource
 
         resource.searchable_select_path(options[:options_name] || :all)
+      end
+
+      # The declaration the endpoint comes from; nil with `url:` or without a resource.
+      def searchable_select_source
+        return if options[:url]
+
+        searchable_select_resource&.searchable_select_sources&.[]((options[:options_name] || :all).to_sym)
       end
 
       def searchable_select_resource
@@ -84,6 +89,26 @@ module ActiveAdminTheme
   end
 end
 
+module ActiveAdminTheme
+  module Inputs
+    # f.input :status, as: :select, tom_select: {create: true, persist: false}
+    # filter :status, as: :select, tom_select: false
+    #
+    # `tom_select:` on any select input: a hash of Tom Select settings for this
+    # select, true to upgrade it, false to leave it native.
+    module TomSelectOption
+      def input_html_options
+        html = super
+        return html unless options.key?(:tom_select)
+
+        html.merge(data: (html[:data] || {}).merge(tom_select: options[:tom_select]))
+      end
+    end
+  end
+end
+
+Formtastic::Inputs::SelectInput.prepend ActiveAdminTheme::Inputs::TomSelectOption unless Formtastic::Inputs::SelectInput < ActiveAdminTheme::Inputs::TomSelectOption
+
 module ActiveAdmin
   module Inputs
     class SearchableSelectInput < ::Formtastic::Inputs::SelectInput
@@ -96,7 +121,7 @@ module ActiveAdmin
 
         # The filter's `collection` plucks a column's distinct values when there is one.
         def pluck_column
-          collection_from_association.map { |record| [send_or_call(label_method, record), send_or_call(value_method, record)] }
+          collection_from_association
         end
       end
     end

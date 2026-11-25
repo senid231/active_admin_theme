@@ -1,23 +1,15 @@
 module ActiveAdminTheme
   module SearchableSelect
-    # searchable_select_options(:customers, scope: -> { Customer.all }, label: :name, search: :name_cont, per_page: 25)
+    # searchable_select_options label: :name, search: :name_cont, per_page: 25
     #
-    # Adds a collection action `<name>_options` to the resource. It answers
-    # GET ?term=foo&page=2 with {results: [{id:, text:}], has_more: true} and
-    # serves the `searchable_select` form and filter inputs. Extra `q[...]`
-    # params are applied as Ransack filters, which is how a dependent select
-    # sends its parent's value.
+    # Adds the collection action `<name>_options`, which serves the
+    # `searchable_select` inputs. The README lists the options and the reply.
     module ResourceDSL
-      # name:     the source's name, `all` by default; the action is `<name>_options`.
-      # scope:    lambda run in the controller, defaults to the resource's scoped_collection.
-      # label:    method name or lambda(record); defaults to the first of Formtastic's label methods the record has.
-      # search:   Ransack predicate (:name_cont) or lambda(scope, term); defaults to a *_cont on the first label column.
-      # value:    method name or lambda(record) for the option value, `id` by default.
-      # order:    anything `reorder` takes, or lambda(scope); defaults to the label column, then the primary key.
-      # per_page: page size.
-      def searchable_select_options(name = :all, scope: nil, label: nil, search: nil, value: :id, order: nil, per_page: 25)
-        source = {action: :"#{name}_options", scope:, label:, search:, value:, order:, per_page:}
-        config.searchable_select_sources[name.to_sym] = source
+      # `filter:` is lambda(term, scope), the argument order of
+      # activeadmin-searchable_select; `search:` and `apply_search:` take (scope, term).
+      def searchable_select_options(name = nil, **options)
+        source = ActiveAdminTheme::SearchableSelect.source(options.delete(:name) || name || :all, options)
+        config.searchable_select_sources[source[:name]] = source
 
         collection_action source[:action], method: :get do
           authorize! ActiveAdmin::Authorization::READ, active_admin_config.resource_class
@@ -39,32 +31,78 @@ module ActiveAdminTheme
       end
     end
 
+    DEFAULT_PER_PAGE = 50
+    MAX_PER_PAGE = 500
+    OPTIONS = %i[scope label search allow_empty_search value order per_page additional_payload].freeze
+    ALIASES = %i[display_text text_attribute filter apply_search].freeze
+
     class << self
+      def source(name, options)
+        unknown = options.keys - OPTIONS - ALIASES
+        raise ArgumentError, "searchable_select_options: unknown option #{unknown.map(&:inspect).join(", ")}" if unknown.any?
+
+        attribute = options[:text_attribute]
+        filter = options[:filter]
+        {
+          name: name.to_sym,
+          action: :"#{name}_options",
+          scope: options[:scope],
+          label: options[:label] || options[:display_text] || attribute,
+          search: options[:search] || options[:apply_search] || (filter && ->(scope, term) { filter.call(term, scope) }) || (attribute && :"#{attribute}_cont"),
+          allow_empty_search: options.fetch(:allow_empty_search, true),
+          value: options[:value] || :id,
+          order: options[:order],
+          per_page: options[:per_page] || DEFAULT_PER_PAGE,
+          additional_payload: options[:additional_payload]
+        }
+      end
+
       # Runs inside the resource controller's collection action.
       def page(controller, source)
         params = controller.params
+        term = params[:term].to_s.strip
+        return reply([], false) if term.empty? && !source[:allow_empty_search]
+
         authorization = controller.send(:active_admin_authorization)
-        scope = source[:scope] ? controller.instance_exec(&source[:scope]) : controller.send(:scoped_collection)
+        scope = base_scope(controller, source, params)
         scope = authorization.scope_collection(scope, ActiveAdmin::Authorization::READ)
         scope = scope.all
         klass = scope.klass
         filters = params[:q].respond_to?(:to_unsafe_h) ? params[:q] : {}
         scope = scope.ransack(filters, auth_object: authorization).result
 
-        term = params[:term].to_s.strip
         scope = apply_search(controller, scope, klass, source, term, authorization) if term.present?
         scope = apply_order(controller, scope, klass, source)
 
-        per_page = source[:per_page]
+        per_page = per_page(source, params)
         page = [params[:page].to_i, 1].max
         records = scope.offset((page - 1) * per_page).limit(per_page + 1).to_a
-        {
-          results: records.first(per_page).map { |record| {id: call(controller, source[:value], record), text: label(controller, source, record).to_s} },
-          has_more: records.size > per_page
-        }
+        reply(records.first(per_page).map { |record| result(controller, source, record) }, records.size > per_page)
       end
 
       private
+
+      def reply(results, more)
+        {results: results, pagination: {more: more}}
+      end
+
+      def result(controller, source, record)
+        item = {id: call(controller, source[:value], record), text: label(controller, source, record).to_s}
+        payload = source[:additional_payload]
+        payload ? item.merge(controller.instance_exec(record, &payload).to_h) : item
+      end
+
+      def base_scope(controller, source, params)
+        scope = source[:scope]
+        return controller.send(:scoped_collection) unless scope
+
+        scope.arity.zero? ? controller.instance_exec(&scope) : controller.instance_exec(params, &scope)
+      end
+
+      def per_page(source, params)
+        requested = params[:per_page].to_i
+        requested.positive? ? [requested, [source[:per_page], MAX_PER_PAGE].max].min : source[:per_page]
+      end
 
       def label_methods
         Formtastic::FormBuilder.collection_label_methods
@@ -88,6 +126,7 @@ module ActiveAdminTheme
       def apply_search(controller, scope, klass, source, term, authorization)
         search = source[:search]
         return controller.instance_exec(scope, term, &search) if search.respond_to?(:call)
+        return scope.search(term) if search.nil? && klass.respond_to?(:search)
 
         unless search
           column = label_column(klass, source)
@@ -101,10 +140,8 @@ module ActiveAdminTheme
       def apply_order(controller, scope, klass, source)
         order = source[:order]
         return controller.instance_exec(scope, &order) if order.respond_to?(:call)
-        return scope.reorder(order) if order
 
-        column = label_column(klass, source)
-        scope.reorder((column ? {column.to_s => :asc} : {}).merge(klass.primary_key => :asc))
+        scope.reorder(order || {klass.primary_key => :desc})
       end
     end
   end

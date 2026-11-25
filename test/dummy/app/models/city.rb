@@ -1,5 +1,6 @@
 class City < ActiveRecord::Base
   belongs_to :country
+  has_many :streets
 
   def self.ransackable_attributes(_auth = nil)
     %w[name country_id]

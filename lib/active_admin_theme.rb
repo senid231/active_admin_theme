@@ -22,13 +22,25 @@ module ActiveAdminTheme
     active_admin_theme/layout
     active_admin_theme/server_clock
     active_admin_theme/table_crisscross
+    active_admin_theme/searchable_select
   ].freeze
 
   class << self
-    attr_writer :javascripts
+    attr_writer :javascripts, :searchable_select_all, :searchable_select_min_chars
 
     def javascripts
       @javascripts ||= DEFAULT_JAVASCRIPTS.dup
+    end
+
+    # True when active_admin_theme/searchable_select upgrades every filter and
+    # form select. False leaves it to `as: :searchable_select` and `tom_select:`.
+    def searchable_select_all
+      @searchable_select_all.nil? ? true : @searchable_select_all
+    end
+
+    # Characters to type before a searchable select asks its endpoint.
+    def searchable_select_min_chars
+      @searchable_select_min_chars || 3
     end
   end
 end

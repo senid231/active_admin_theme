@@ -24,6 +24,22 @@ ActiveRecord::Schema.define do
     t.string :name
     t.references :country
   end
+  create_table :streets do |t|
+    t.string :name
+    t.references :city
+  end
+  create_table :products do |t|
+    t.string :name, :sku, :category
+  end
+  create_table :shipments do |t|
+    t.string :reference, :product_sku, :carrier, :priority, :tag, :size
+    t.boolean :insured, default: false
+    t.references :product, :country, :city, :street
+  end
+  create_table :parcels do |t|
+    t.string :kind
+    t.references :shipment
+  end
   create_table :orders do |t|
     t.string :reference, :status
     t.references :customer, :country, :city
@@ -49,6 +65,29 @@ country_records = Array.new(70) { |i| Country.create!(name: format("Country %02d
 country_records << Country.create!(name: %(<i>Italic</i> & "Quoted"))
 country_records.each do |country|
   3.times { |i| City.create!(name: "#{country.name} City #{i + 1}", country: country) }
+end
+
+# Two streets per city of the first ten countries, for the country, city,
+# street chain. 120 products: more than two pages of the default 50.
+City.where(country_id: country_records.first(10).map(&:id)).find_each do |city|
+  2.times { |i| Street.create!(name: "#{city.name} Street #{i + 1}", city: city) }
+end
+120.times do |i|
+  Product.create!(name: format("Product %03d", i + 1), sku: format("SKU-%03d", 500 - i), category: Product::CATEGORIES[i % 2])
+end
+4.times do |i|
+  city = country_records[4].cities.order(:id).first
+  Shipment.create!(
+    reference: format("SHP-%02d", i + 1),
+    product: Product.find(i + 1),
+    product_sku: Product.find(i + 1).sku,
+    country: country_records[4],
+    city: city,
+    street: city.streets.first,
+    carrier: Shipment::CARRIERS[i],
+    size: Shipment::SIZES[i % 3],
+    insured: i.even?
+  )
 end
 
 customers = Customer.order(:id).to_a

@@ -1,7 +1,6 @@
 /*
  * searchable_select: Tom Select (vendor/javascript/tom-select.js) themed with
- * the --aat-* tokens. Loaded only by hosts that add the JS module; the rules
- * match nothing otherwise.
+ * the --aat-* tokens. The rules match nothing on a page without the script.
  */
 .ts-wrapper {
   position: relative;
@@ -102,6 +101,12 @@
   position: absolute;
   left: -10000px;
   opacity: 0;
+}
+
+/* A select without a search input, such as a boolean filter. */
+.ts-wrapper:not(.has-items) .ts-control[data-placeholder]::before {
+  content: attr(data-placeholder);
+  color: var(--aat-text-muted);
 }
 
 /* Selected values. */
@@ -208,10 +213,19 @@
   border-color: var(--aat-accent) !important;
 }
 .ts-dropdown .option,
+.ts-dropdown .create,
 .ts-dropdown .no-results,
+.ts-dropdown .not-loading,
+.ts-dropdown .loading,
 .ts-dropdown .loading-more-results,
 .ts-dropdown .no-more-results {
   padding: 0.375rem 0.75rem;
+}
+.ts-dropdown .create {
+  cursor: pointer;
+}
+.ts-dropdown .create.active {
+  background-color: var(--aat-surface-hover);
 }
 .ts-dropdown .option {
   cursor: pointer;
@@ -224,6 +238,8 @@
   background-color: var(--aat-selected-row);
 }
 .ts-dropdown .no-results,
+.ts-dropdown .not-loading,
+.ts-dropdown .loading,
 .ts-dropdown .loading-more-results,
 .ts-dropdown .no-more-results {
   color: var(--aat-text-muted);

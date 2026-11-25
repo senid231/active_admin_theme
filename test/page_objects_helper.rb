@@ -83,6 +83,19 @@ module Pages
     section :filters, PO::Filters
   end
 
+  class ShipmentIndex < PO::Page
+    set_url "/admin/shipments{?query*}"
+
+    section :table, PO::Table
+    section :filters, PO::Filters
+  end
+
+  class ShipmentForm < PO::Page
+    set_url "/admin/shipments{/id}{/action}"
+
+    section :form, PO::Form
+  end
+
   class Components < PO::Page
     set_url "/admin/components"
   end

@@ -15,5 +15,7 @@ end
 ActiveAdminTheme.javascripts += %w[
   active_admin_theme/confirm_dialog
   active_admin_theme/secret_reveal
-  active_admin_theme/searchable_select
 ]
+
+# test/searchable_select_off_test.rb
+ActiveAdminTheme.searchable_select_all = false if ENV["SEARCHABLE_SELECT_ALL"] == "0"

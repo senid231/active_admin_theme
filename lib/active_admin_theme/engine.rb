@@ -43,6 +43,10 @@ module ActiveAdminTheme
       require "active_admin_theme/resource_dsl/searchable_select"
     end
 
+    initializer "active_admin_theme.config_helper" do
+      require "active_admin_theme/helpers/config"
+    end
+
     # Before any resource registers its menu item.
     initializer "active_admin_theme.nested_menu" do
       require "active_admin_theme/nested_menu"

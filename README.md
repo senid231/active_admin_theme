@@ -103,6 +103,7 @@ ActiveAdmin pages import the modules listed in `ActiveAdminTheme.javascripts`. W
   active_admin_theme/layout
   active_admin_theme/server_clock
   active_admin_theme/table_crisscross
+  active_admin_theme/searchable_select
 ]
 ```
 
@@ -197,7 +198,7 @@ ActiveAdmin 4 still has `panel`, but no longer wraps sidebar content or the show
 
 ## Components
 
-Every component is opt-in: nothing changes for an app that does not call it or load its script. In a `content do` block, wrap the helpers that return strings (`with_tooltip`, `pre_wrap`) in `text_node`.
+Every component but the select widget is opt-in: nothing changes for an app that does not call it or load its script. In a `content do` block, wrap the helpers that return strings (`with_tooltip`, `pre_wrap`) in `text_node`.
 
 ### `status_tag`
 
@@ -282,33 +283,154 @@ action_item :reject, only: :show do
 end
 ```
 
+### Selects
+
+Selects are [Tom Select](https://tom-select.js.org) widgets, drawn by the `active_admin_theme/searchable_select` script. The script is in the default list. The gem vendors a pinned tom-select and pins it into `ActiveAdmin.importmap`; npm hosts add `tom-select` to their own dependencies.
+
+**Every select is upgraded.** Without any setup the script upgrades:
+
+| Select | Widget |
+| --- | --- |
+| Filter selects (`.filters-form-field.select select`) | Search box in the dropdown, remove button, placeholder "Any" |
+| Boolean filters | Remove button, no search box |
+| The predicate select of string and numeric filters | No search box |
+| Form selects (`form.formtastic li.input.select select`) | Search box in the dropdown; a remove button when the select has a blank option or is multiple |
+| `select[data-tom-select]` anywhere | As a form select |
+
+Selects added later, such as `has_many` rows and dialogs, are upgraded when they enter the page. The contents of a `<template>` are left alone.
+
+To turn this off for the whole app, so that only `as: :searchable_select` inputs and selects with `tom_select:` get the widget:
+
+```ruby
+ActiveAdminTheme.searchable_select_all = false
+```
+
+To drop the script and Tom Select altogether:
+
+```ruby
+ActiveAdminTheme.javascripts -= %w[active_admin_theme/searchable_select]
+```
+
+**Per-select settings.** `tom_select:` on any select input or filter takes `false` (leave the select native), `true` (upgrade it even when `searchable_select_all` is off) or a hash of [Tom Select settings](https://tom-select.js.org/docs/) merged over the theme's. The hash also takes `addPlugins` and `removePlugins`.
+
+```ruby
+f.input :size, as: :select, collection: sizes, tom_select: false
+filter :event_eq, as: :select, collection: events, tom_select: {create: true, persist: false} # free-text values
+f.input :kind, as: :select, include_blank: "None", tom_select: {allowEmptyOption: true} # the blank option is a row
+f.input :tags, as: :select, multiple: true, tom_select: {addPlugins: ["checkbox_options"], removePlugins: ["remove_button"]}
+```
+
+The option renders the `data-tom-select` attribute, which you can also write yourself: `"false"`, `"true"` or the settings as JSON.
+
+```ruby
+select_tag :color, options_for_select(colors), data: {tom_select: {create: true}}
+```
+
+**Settings and texts.** The theme's `_page_content` partial renders them as JSON for the script:
+
+```ruby
+ActiveAdminTheme.searchable_select_all = true # upgrade every select
+ActiveAdminTheme.searchable_select_min_chars = 3 # characters to type before an AJAX select searches
+```
+
+The texts come from I18n, with these defaults:
+
+```yaml
+en:
+  active_admin_theme:
+    searchable_select:
+      any: "Any"
+      no_results: "No results matched"
+      type_to_search: "Type %{count} chars to search..."
+      loading: "Loading..."
+      loading_more: "Loading more..."
+      no_more_results: "No more results"
+      select_parent_first: "Select the parent first"
+      add: "Add"
+```
+
+A host that overrides `_page_content` renders them itself with `<%= active_admin_theme_config_tag %>`. Without that element the script uses the defaults above. A host can also set them in JavaScript, in a script that runs before the theme's script:
+
+```html
+<script>window.ActiveAdminTheme = {searchableSelect: {all: false, minChars: 2, texts: {noResults: "Nothing found"}}}</script>
+```
+
+The script exports `configure(settings)`, which changes them for selects not upgraded yet, and `upgradeAll(root)`, which upgrades the selects inside a node.
+
 ### Searchable select
 
-A select built on [tom-select](https://tom-select.js.org) that searches over AJAX, loads more options as you scroll, and can depend on another select. It works in forms and filters, and on mobile. The gem vendors a pinned tom-select and pins it into `ActiveAdmin.importmap`; an app that does not load the script does not load tom-select. npm hosts add `tom-select` to their own dependencies. Add the script:
-
-```ruby
-ActiveAdminTheme.javascripts += %w[active_admin_theme/searchable_select]
-```
-
-If your app already defines its own `searchable_select_options` in an initializer, yours wins: the theme includes its version earlier.
-
-Serve the options from the resource that holds them:
-
-```ruby
-ActiveAdmin.register Customer do
-  searchable_select_options label: :name, search: :name_cont, per_page: 25
-end
-```
-
-`searchable_select_options(name = :all, scope: nil, label: nil, search: nil, value: :id, order: nil, per_page: 25)` adds a collection action that returns `{results: [{id:, text:}], has_more: true}` for `?term=` and `?page=`. It applies the authorization adapter's read scope. Use the input in a form or a filter:
+`as: :searchable_select` is a select that takes its options from an endpoint. The page holds only the selected records. It works in forms and filters, and on mobile.
 
 ```ruby
 f.input :customer, as: :searchable_select
-f.input :city, as: :searchable_select, depends_on: :country_id, depends_placeholder: "Select a country first"
 filter :customer, as: :searchable_select
 ```
 
-A dependent select stays disabled until its parent has a value, and reloads when the parent changes. Other options: `url:`, `resource:`, `options_name:`, `placeholder:`, `depends_param:`.
+By default it searches once three characters are typed, loads the next page as the dropdown scrolls, and replaces the results when the text changes. Selected items stay. Three spaces ask for the unfiltered list: the length of the raw input counts, and the term is trimmed before it is sent.
+
+| Option | Example | Meaning |
+| --- | --- | --- |
+| `min_chars:` | `min_chars: 0` | Characters to type before searching. With 0 the first page loads when the select gets focus. |
+| `load_all:` | `load_all: true` | Fetch every page up front and filter in the browser. For small collections. |
+| `per_page:` | `per_page: 20` | Page size to ask the endpoint for. |
+| `placeholder:` | `placeholder: "Search customers"` | Text shown while nothing is selected. |
+| `depends_on:` | `depends_on: :country_id` | The input this select depends on: `:country_id` in a form, `:country_id_eq` in a filter. |
+| `depends_param:` | `depends_param: "q[region_id_eq]"` | Query param that carries the parent's value, `q[<depends_on>_eq]` by default. |
+| `depends_placeholder:` | `depends_placeholder: "Select a country first"` | Text shown while the parent is empty. |
+| `resource:` | `resource: Account` | Model or ActiveAdmin resource that has the endpoint, when the input is not an association. |
+| `options_name:` | `options_name: :external_id` | Which `searchable_select_options` of the resource to use, `:all` by default. |
+| `url:` | `url: -> { all_options_admin_accounts_path }` | The endpoint, as a string or a lambda run in the view. |
+| `tom_select:` | `tom_select: {maxItems: 3}` | Tom Select settings for this select. |
+
+**Dependent selects.** A dependent select stays disabled until its parent has a value, and sends that value with every request. When the parent changes or is cleared, the select is cleared and fires `change`, so a select that depends on it resets too. On page load a preselected value is kept, so deep links and submitted filters survive. With `load_all:` the options are fetched again for each parent value.
+
+```ruby
+filter :country, as: :searchable_select
+filter :city, as: :searchable_select, depends_on: :country_id_eq, depends_placeholder: "Select a country first"
+filter :street, as: :searchable_select, depends_on: :city_id_eq, load_all: true
+```
+
+**The endpoint.** Declare it in the resource that holds the options:
+
+```ruby
+ActiveAdmin.register Customer do
+  searchable_select_options
+end
+```
+
+`searchable_select_options(name = :all, **options)` adds the collection action `<name>_options`, here `GET /admin/customers/all_options`. The name is positional or `name:`. The action checks `authorize!` for reading the resource class, applies the authorization adapter's read scope, and applies `q[...]` params as Ransack filters, which is how a dependent select sends its parent's value.
+
+| Option | Default | Example |
+| --- | --- | --- |
+| `scope:` | The resource's `scoped_collection` | `scope: -> { Customer.active }`, or with the request params: `scope: ->(params) { Customer.where(kind: params[:kind]) }` |
+| `label:` | The first of Formtastic's label methods the record has (`display_name`, `name`, ...) | `label: :email` or `label: ->(customer) { "#{customer.id} | #{customer.name}" }` |
+| `search:` | The model's `search(term)` class method or scope when it has one, else `<label column>_cont` | `search: :name_or_email_cont` or `search: ->(scope, term) { scope.search_by_name(term) }` |
+| `allow_empty_search:` | `true` | `allow_empty_search: false`: a blank term returns nothing |
+| `value:` | `:id` | `value: :external_id` or a lambda taking the record |
+| `order:` | Primary key, descending | `order: :name` or `order: ->(scope) { scope.order(:position) }` |
+| `per_page:` | `50` | `per_page: 25` |
+| `additional_payload:` | none | `additional_payload: ->(customer) { {email: customer.email} }` |
+
+Lambdas run in the resource controller. An unknown option raises `ArgumentError`. The request's `per_page` overrides the page size up to 500, or up to the declared `per_page:` when that is larger.
+
+With `value:` other than the id, name the declaration in the input. The input then finds the selected record by that attribute:
+
+```ruby
+searchable_select_options :external_id, value: :external_id
+filter :account_external_id_eq, as: :searchable_select, resource: Account, options_name: :external_id
+```
+
+Names from [activeadmin-searchable_select](https://github.com/codevise/activeadmin-searchable_select) and from older hosts also work: `display_text:` for `label:`, `text_attribute:` for `label:` and the searched column, `filter:` for `search:` with a lambda taking `(term, scope)`, and `apply_search:` for `search:` with a lambda taking `(scope, term)`.
+
+**The reply.** The action takes `term`, `page` (starting at 1) and `per_page`, and answers:
+
+```json
+{"results": [{"id": 17, "text": "Customer 17"}], "pagination": {"more": true}}
+```
+
+This is the shape of activeadmin-searchable_select and select2, except that activeadmin-searchable_select counts pages from 0. An endpoint of your own, given with `url:`, has to answer the same way.
+
+**Your own `searchable_select_options`.** If your app or another gem defines `searchable_select_options` on `ActiveAdmin::ResourceDSL`, that definition wins in any load order, and the theme's inputs need `url:`. To use the theme's instead, prepend it: `ActiveAdmin::ResourceDSL.prepend ActiveAdminTheme::SearchableSelect::ResourceDSL`.
 
 ## Optional scripts
 
@@ -319,7 +441,7 @@ A dependent select stays disabled until its parent has a value, and reloads when
 | `active_admin_theme/table_crisscross` | on | Row and column highlight on a cell click |
 | `active_admin_theme/confirm_dialog` | off | Focus and validation for `confirm_dialog` |
 | `active_admin_theme/secret_reveal` | off | `secret_reveal` |
-| `active_admin_theme/searchable_select` | off | Searchable select |
+| `active_admin_theme/searchable_select` | on | Tom Select on every select, and the searchable select |
 
 ## Nested menus
 
@@ -380,9 +502,20 @@ index.expand_sidebar
 index.sidebar_collapsed?
 ```
 
-### Searchable select
+### Selects
 
-`SearchableSelectField` and `SearchableSelectFilter` drive the widget and read the `<select>` it hides. They need a JavaScript driver. The widget loads its options a page at a time, so picking types the label into the search box first. Pass `search:` to type another text, or `search: false` to type nothing.
+The theme prepends a module into `ActiveAdminPageObjects::SelectControl`, so the base gem's `Form::SelectField`, `SelectFilter`, `BooleanFilter` and the predicate select of `StringFilter` and `NumericFilter` pick their option in the Tom Select widget when the select has one, and in the native select when it does not (`tom_select: false`, or `searchable_select_all` off). Reading goes to the `<select>` the widget hides. Specs written for native selects keep working, with a JavaScript driver.
+
+```ruby
+form.field(:status).fill("paid") # clicks the widget
+form.field(:status).selected # => "paid"
+filters.filter(:status).select_option("paid")
+filters.filter(:reference).fill_in(with: "ORD", predicate: :start)
+```
+
+`SearchableSelectField` and `SearchableSelectFilter` add the widget's own API. `form.field` and `filters.filter` return them for an `as: :searchable_select` input; declare them on a plain select to use that API there: `field :tag, "Tag", ActiveAdminTheme::PageObjects::SearchableSelectField`. They need a JavaScript driver.
+
+Picking in a select that loads its options types the label into the search box first. Pass `search:` to type another text, such as three spaces for the whole list, or `search: false` to type nothing. A plain select types nothing unless `search:` is given.
 
 ```ruby
 customer = form.field(:customer)
@@ -392,18 +525,22 @@ customer.selected # => "Acme"
 customer.chosen # => ["Acme"], every item of a multiple select
 customer.remove("Acme") # clear removes every item
 customer.placeholder
+form.field(:tag).create_option("bulky") # a select with tom_select: {create: true}
 expect(form).to have_disabled_field(:city) # a dependent select without its parent
 
 filter = filters.filter(:customer)
 filter.select_option("Acme")
 expect(filter).to have_item("Acme") # also have_selected and have_disabled
-filter.search("ac") # opens the dropdown and types
+filter.search("ac") # opens the dropdown, types and waits for the reply
+filter.message # => "Type 3 chars to search...", or the no-results text
+expect(filter).to have_message("No results matched")
 expect(filter).to have_option("Acme") # what the open dropdown offers
 filter.options # the labels loaded so far
+filter.load_more # scrolls to the end, waits for the next page, returns the labels
 filter.close
 ```
 
-A multiple select takes an array in `fill`, and `select_option` once per label. In a section that declares its fields or filters, declare these classes: `field :customer, "Customer", ActiveAdminTheme::PageObjects::SearchableSelectField`.
+A multiple select takes an array in `fill`, and `select_option` once per label.
 
 ### Components
 
