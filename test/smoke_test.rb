@@ -18,6 +18,13 @@ class SmokeTest < Minitest::Test
     end
   end
 
+  # The page objects are test code: an app loads them from its spec helper.
+  def test_the_theme_does_not_load_its_page_objects
+    assert_nil defined?(ActiveAdminTheme::PageObjects)
+    assert_nil defined?(ActiveAdminPageObjects)
+    assert_empty Gem::Specification.load(File.expand_path("../active_admin_theme.gemspec", __dir__)).runtime_dependencies.map(&:name) - ["activeadmin"]
+  end
+
   def test_built_css_includes_the_theme_stylesheet
     css = File.read(File.expand_path("dummy/app/assets/builds/active_admin.css", __dir__))
     assert_includes css, "--active-admin-theme"

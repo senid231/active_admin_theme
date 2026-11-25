@@ -33,4 +33,7 @@ group :development, :test do
   gem 'puma'
   gem 'capybara'
   gem 'cuprite'
+  # Drives the dummy app in the tests of active_admin_theme/page_objects. Not on
+  # RubyGems yet, so pinned to a commit.
+  gem 'active_admin_page_objects', github: 'senid231/active_admin_page_objects', ref: '16a793fa5c18f4b1e47bcf359922bc9f61544020'
 end

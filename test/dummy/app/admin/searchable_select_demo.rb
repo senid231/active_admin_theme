@@ -1,6 +1,6 @@
 # Demo of the searchable select: the options endpoints, a form and a filter
 # list that use them, paging (71 countries), and a dependent select (city
-# follows country).
+# follows country). The cities list filters by several countries.
 ActiveAdmin.register Customer do
   searchable_select_options label: :name, search: :name_cont, per_page: 10
 end
@@ -14,6 +14,7 @@ end
 ActiveAdmin.register City do
   menu false
   filter :name
+  filter :country, as: :searchable_select, multiple: true
   searchable_select_options per_page: 20
 end
 

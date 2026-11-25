@@ -1,6 +1,14 @@
 # DB-backed resource: index with filters and batch actions, show, and a form.
 ActiveAdmin.register Customer do
   permit_params :name, :email, :country, :status, :balance, :notes
+  config.batch_actions = true
+
+  scope :all, default: true
+  scope(:active) { |customers| customers.where(status: "active") }
+
+  member_action :secret, method: :get do
+    render json: {value: "token-#{resource.id}"}
+  end
 
   filter :name
   filter :email
@@ -15,8 +23,9 @@ ActiveAdmin.register Customer do
     column :name
     column :email
     column :country
-    column :status
+    column(:status) { |customer| status_tag customer.status }
     column :balance
+    column(:notes) { |customer| truncate_text customer.notes, length: 20 }
     column :created_at
     actions
   end
@@ -32,8 +41,9 @@ ActiveAdmin.register Customer do
           row :name
           row :email
           row :country
-          row :status
-          row :balance
+          row(:status) { status_tag resource.status }
+          row(:balance) { text_node with_tooltip(resource.balance, "Current balance") }
+          row(:token) { secret_reveal url: "/admin/customers/#{resource.id}/secret" }
           row :created_at
         end
       end
@@ -43,7 +53,7 @@ ActiveAdmin.register Customer do
             panel("Notes") { para resource.notes }
           end
           tab "Raw" do
-            pre resource.attributes.inspect
+            text_node pre_wrap(resource.attributes.map { |name, value| "#{name}: #{value}" }.join("\n"))
           end
         end
       end
