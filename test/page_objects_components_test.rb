@@ -10,7 +10,14 @@ class PageObjectsComponentsTest < PageObjectsTestCase
     index = Pages::CustomerIndex.new
     index.load
     tag = Theme::StatusTag.find_in(index.table.row(2).cell(:status))
-    assert_equal "PENDING", tag.text
+    assert_equal "Pending", tag.text
+    assert tag.has_text?("PENDING")
+    assert tag.has_text?("pend")
+    assert tag.has_text?("pending", exact: true)
+    refute tag.has_text?("pend", exact: true, wait: 0)
+    assert tag.has_no_text?("active")
+    refute tag.has_no_text?("pending", wait: 0)
+    assert tag.has_text?(/PEND/)
     assert_equal "pending", tag.kind
     assert_nil tag.color
     assert_equal "active", Theme::StatusTag.find_in(customer_show(1).attributes_table.row(:status)).kind

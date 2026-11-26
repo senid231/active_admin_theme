@@ -236,7 +236,7 @@ status_tag "Shipped"                # uses --aat-status-shipped, if you define i
 status_tag "Late", color: "#b91c1c"
 ```
 
-Tags are square, small, and shown in uppercase, as in theme 3. The case is CSS only, so the HTML keeps the text you pass, while a browser test driver reads it in uppercase.
+Tags are square, small, and shown in uppercase, as in theme 3. The case is CSS only, so the HTML keeps the text you pass, while a browser test driver reads it in uppercase. The `StatusTag` page object and the base gem's `have_cell` and `have_row` compare String text ignoring case.
 
 ### `truncate_text`
 
@@ -582,7 +582,8 @@ A component is found inside any scope: a page, a section, a table cell or an att
 include ActiveAdminTheme::PageObjects
 
 tag = StatusTag.find_in(index.table.row(order.id).cell(:status))
-tag.text # => "SHIPPED", as shown; a browser driver reads the uppercase
+tag.text # => "Shipped", as the HTML has it, not the CSS uppercase
+expect(tag).to have_text("shipped") # a String ignores case
 tag.kind # => "shipped", its data-status
 tag.color # => "#b91c1c" with color:, or nil
 
