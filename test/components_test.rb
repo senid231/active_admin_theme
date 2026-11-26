@@ -20,16 +20,17 @@ class ComponentsTest < Minitest::Test
     page.evaluate_script("getComputedStyle(document.querySelector(#{selector.to_json})).#{property}")
   end
 
-  def test_status_tag_variants_have_their_own_colors
-    colors = %w[ok warning error info empty].map { |status| style("[data-status=#{status}]", "backgroundColor") }
-    assert_equal 5, colors.uniq.size
-    colors.each { |color| refute_equal "rgba(0, 0, 0, 0)", color }
+  def test_status_tag_variants_have_their_own_solid_fills
+    colors = %w[ok warning error info no].map { |status| style("[data-status=#{status}]", "backgroundColor") }
+    assert_equal ["rgb(94, 126, 99)", "rgb(158, 108, 21)", "rgb(206, 72, 59)", "rgb(56, 116, 210)", "rgb(112, 118, 129)"], colors
+    assert_equal "rgb(255, 255, 255)", style("[data-status=ok]", "color")
+    assert_equal "rgba(0, 0, 0, 0)", style("[data-status=empty]", "backgroundColor")
   end
 
-  def test_status_tag_colors_follow_dark_mode
+  def test_status_tag_colors_are_the_same_in_dark_mode
     light = [style("[data-status=ok]", "backgroundColor"), style("[data-status=ok]", "color")]
     page.execute_script("document.documentElement.classList.add('dark')")
-    refute_equal light, [style("[data-status=ok]", "backgroundColor"), style("[data-status=ok]", "color")]
+    assert_equal light, [style("[data-status=ok]", "backgroundColor"), style("[data-status=ok]", "color")]
   end
 
   def test_status_tag_without_a_defined_color_keeps_the_default_look
@@ -43,8 +44,7 @@ class ComponentsTest < Minitest::Test
   def test_status_tag_reads_a_custom_property_for_its_status
     shipped = style("[data-status=shipped]", "backgroundColor")
     refute_equal style("[data-status=unstyled]", "backgroundColor"), shipped
-    expected = page.evaluate_script("(() => { const e = document.createElement('i'); e.style.backgroundColor = 'color-mix(in srgb, #7c3aed 18%, transparent)'; document.body.append(e); return getComputedStyle(e).backgroundColor })()")
-    assert_equal expected, shipped
+    assert_equal "rgb(124, 58, 237)", shipped
   end
 
   def test_status_tag_color_option_sets_the_color

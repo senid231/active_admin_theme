@@ -40,6 +40,7 @@
   --aat-input-border: #c9ced4;
   --aat-accent: #5ea3d3;
   --aat-link: #38678b;
+  --aat-delete-link: #38678b;
   --aat-button: #2c709f;
   --aat-button-hover: #23597f;
   --aat-button-text: #ffffff;
@@ -76,6 +77,7 @@
   --aat-input-bg: #1e2227;
   --aat-input-border: #4d555f;
   --aat-link: #7cc0ec;
+  --aat-delete-link: #f49b9b;
   --aat-table-header: #363c43;
   --aat-filter-label: #dde2e8;
 }
@@ -96,9 +98,6 @@
   }
 }
 
-#site-header a {
-  color: inherit;
-}
 
 /* Dense tables: tight cell padding. Index tables keep one line per row;
    a table_for on a show page wraps long values inside its panel. */
@@ -172,6 +171,8 @@
 }
 .panel-title {
   padding: 0.375rem 0.9375rem;
+  border-bottom: 1px solid var(--aat-border);
+  background-color: var(--aat-page-bg);
 }
 .panel-body {
   padding: 0.9375rem;
@@ -336,7 +337,7 @@ table.data-table td[data-selected-cell] {
 }
 .aat-tab {
   padding: 0.375rem 0.875rem;
-  font-size: 0.8125rem;
+  font-size: var(--aat-font-size);
   font-weight: 700;
   color: var(--aat-text-muted);
   border: 1px solid var(--aat-border);
@@ -474,6 +475,29 @@ body,
 body {
   background-color: var(--aat-page-bg);
   color: var(--aat-text);
+}
+
+/* Links as in v3: the theme colours, no underline on hover. In the base layer, like
+   ActiveAdmin's own `a` rule, so a utility class on a link still wins. */
+@layer base {
+  :root a {
+    color: var(--aat-link);
+  }
+  :root a:hover {
+    text-decoration-line: none;
+  }
+  :root a[data-method="delete"] {
+    color: var(--aat-delete-link);
+  }
+  :root #site-header a {
+    color: inherit;
+  }
+}
+
+/* A top-menu item keeps its highlight while its dropdown is open, as in v3. */
+[data-aat-main-menu] li:has(> div:not(.hidden)) > a {
+  background-color: var(--aat-menu-pill);
+  color: var(--aat-menu-hover-text);
 }
 
 #site-header {

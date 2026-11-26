@@ -170,7 +170,7 @@ All colors are CSS custom properties with a light value on `:root` and a dark va
 | `--aat-page-bg`, `--aat-surface`, `--aat-surface-2`, `--aat-surface-hover`, `--aat-selected-row` | Page; panels, attributes tables and the tab content box; table headers, hover, selected rows |
 | `--aat-text`, `--aat-text-muted`, `--aat-border` | Text and borders |
 | `--aat-input-bg`, `--aat-input-border` | Form controls |
-| `--aat-accent`, `--aat-link` | Accent and links |
+| `--aat-accent`, `--aat-link`, `--aat-delete-link` | Accent, links, and delete links |
 | `--aat-button`, `--aat-button-hover`, `--aat-button-text` | Buttons and action items. Every action item is a filled button. |
 | `--aat-header-bg`, `--aat-header-text`, `--aat-header-border`, `--aat-menu-*` | Header and top menu |
 | `--aat-titlebar-bg`, `--aat-titlebar-text`, `--aat-titlebar-muted` | Title band: background, page title, breadcrumbs. Dark in both modes. |
@@ -229,7 +229,7 @@ Every component but the select widget is opt-in: nothing changes for an app that
 
 ### `status_tag`
 
-`ok`, `warning`, `error`, `info`, and `empty` have theme colors in light and dark mode. For any other value, define a CSS custom property named `--aat-status-<value>` in your CSS. For a one-off color, pass `color:` (a hex, named, `rgb()`, or `hsl()` color; anything else raises `ArgumentError`):
+Tags have a solid fill and white text, as in theme 3, the same in light and dark mode. `ok` (also `yes`, `published`, `complete`) is green, `warning` is amber, `error` is red, `info` is blue, and anything else, such as `no`, is gray. `empty` shows only muted text. For any other value, define a CSS custom property named `--aat-status-<value>` in your CSS. For a one-off color, pass `color:` (a hex, named, `rgb()`, or `hsl()` color; anything else raises `ArgumentError`):
 
 ```ruby
 status_tag "Shipped"                # uses --aat-status-shipped, if you define it

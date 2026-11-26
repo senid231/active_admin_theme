@@ -1,60 +1,56 @@
 /*
- * status_tag colors. Each tag takes `--aat-status-color` and tints its
- * background and text from it. ok, warning, error, info and empty are defined
- * here on :root; the theme also reads `--aat-status-<value>` for any other value
- * (see lib/active_admin_theme/views/status_tag.rb). A host overrides any of
- * them in its own CSS.
+ * status_tag colors as in theme v3: a solid fill with white text, the same in
+ * light and dark. Each tag takes `--aat-status-color`; ok, warning, error, info
+ * and neutral are defined here on :root, and the theme also reads
+ * `--aat-status-<value>` for any other value (see
+ * lib/active_admin_theme/views/status_tag.rb). A host overrides any of them in
+ * its own CSS.
  */
 :root {
-  --aat-status-ok: #2563eb;
-  --aat-status-warning: #ea580c;
-  --aat-status-error: #dc2626;
-  --aat-status-info: #0891b2;
-  --aat-status-empty: #6b7280;
+  --aat-status-ok: #5e7e63;
+  --aat-status-warning: #9e6c15;
+  --aat-status-error: #ce483b;
+  --aat-status-info: #3874d2;
+  --aat-status-neutral: #707681;
+  --aat-status-text: #ffffff;
 }
 
-.status-tag[data-status="ok"] {
+.status-tag:is([data-status="ok"], [data-status="yes"], [data-status="published"], [data-status="complete"], [data-status="completed"], [data-status="green"]) {
   --aat-status-color: var(--aat-status-ok);
 }
-.status-tag[data-status="warning"] {
+.status-tag:is([data-status="warning"], [data-status="warn"], [data-status="orange"]) {
   --aat-status-color: var(--aat-status-warning);
 }
-.status-tag[data-status="error"] {
+.status-tag:is([data-status="error"], [data-status="errored"], [data-status="red"]) {
   --aat-status-color: var(--aat-status-error);
 }
-.status-tag[data-status="info"] {
+.status-tag:is([data-status="info"], [data-status="notice"], [data-status="blue"]) {
   --aat-status-color: var(--aat-status-info);
-}
-.status-tag[data-status="empty"] {
-  --aat-status-color: var(--aat-status-empty);
 }
 
 /*
- * A tag whose color is undefined (a custom status the host did not style)
- * falls back to ActiveAdmin's default gray: the var() chain is invalid, so
- * the outer fallback applies.
+ * A tag with no color of its own (no, unset, or a custom status the host did
+ * not define) is neutral gray: an undefined var() makes --aat-status-color
+ * invalid, so the fallback applies.
  */
-.status-tag:is([data-status="ok"], [data-status="warning"], [data-status="error"], [data-status="info"], [data-status="empty"], .aat-status) {
-  --aat-status-bg: color-mix(in srgb, var(--aat-status-color) 18%, transparent);
-  --aat-status-fg: color-mix(in srgb, var(--aat-status-color) 70%, black);
-  background-color: var(--aat-status-bg, var(--color-gray-200));
-  color: var(--aat-status-fg, var(--color-gray-600));
-}
-.dark .status-tag:is([data-status="ok"], [data-status="warning"], [data-status="error"], [data-status="info"], [data-status="empty"], .aat-status) {
-  --aat-status-bg: color-mix(in srgb, var(--aat-status-color) 25%, transparent);
-  --aat-status-fg: color-mix(in srgb, var(--aat-status-color) 60%, white);
-  background-color: var(--aat-status-bg, color-mix(in oklab, var(--color-gray-400) 20%, transparent));
-  color: var(--aat-status-fg, var(--color-gray-400));
-}
-
-/* Shape as in theme v3: square, uppercase, small. */
 .status-tag {
-  padding: 0.1875rem 0.3125rem 0.125rem;
+  padding: 3px 4px 2px;
   font-size: 0.8em;
   font-weight: 400;
   line-height: 1;
   letter-spacing: 0.15em;
   text-indent: 0.15em;
   text-transform: uppercase;
+  border: 1px solid color-mix(in srgb, var(--aat-status-color, var(--aat-status-neutral)) 84%, black);
   border-radius: 2px;
+  background-color: var(--aat-status-color, var(--aat-status-neutral));
+  color: var(--aat-status-text);
+}
+
+/* Placeholder statuses stay quiet, as in v3. */
+.status-tag:is([data-status="empty"], [data-status="unknown"], [data-status="none"]) {
+  border-color: transparent;
+  background-color: transparent;
+  color: var(--aat-text-muted);
+  font-weight: 700;
 }
