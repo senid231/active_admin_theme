@@ -33,6 +33,7 @@
   --aat-surface-2: #f0f2f5;
   --aat-surface-hover: #f5f7fa;
   --aat-selected-row: #d9e4ec;
+  --aat-label-bg: color-mix(in srgb, var(--aat-surface) 96%, var(--aat-text));
   --aat-text: #323537;
   --aat-text-muted: #6b7177;
   --aat-border: #e0e4e9;
@@ -162,10 +163,13 @@
   background-color: var(--aat-selected-row);
 }
 
-/* Panels, sidebar sections, and attributes tables: tighter chrome. */
+/* Panels, sidebar sections, attributes tables and the tab content box sit on the v3 surface,
+   apart from the page background. */
 .panel,
 .attributes-table {
   @apply mb-3;
+  border-color: var(--aat-border);
+  background-color: var(--aat-surface);
 }
 .panel-title {
   @apply px-2.5 py-1.5;
@@ -173,8 +177,11 @@
 .panel-body {
   @apply px-2.5 py-2;
 }
-.attributes-table :where(tbody > tr > th, tbody > tr > td) {
-  @apply px-2.5 py-1.5;
+.attributes-table :where(tbody > tr > th) {
+  padding: 10px 1.25rem 10px 0.625rem;
+}
+.attributes-table :where(tbody > tr > td) {
+  padding: 10px 0.625rem 10px 1rem;
 }
 /* A value that does not fit scrolls sideways instead of being clipped. */
 .attributes-table :where(tbody > tr > td) {
@@ -184,7 +191,7 @@
 }
 .attributes-table :where(tbody > tr > th) {
   font-size: 0.9em;
-  background-color: transparent;
+  background-color: var(--aat-label-bg);
 }
 /* The label column takes its content's width up to --aat-label-cap; a longer label wraps.
    A table for several records has col elements and keeps the table layout. */
@@ -330,7 +337,11 @@ table.data-table td[data-selected-cell] {
   padding-bottom: calc(0.375rem + 1px);
 }
 .aat-tab-panel {
-  padding-top: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--aat-border);
+  border-top: 0;
+  border-radius: 0 0 0.25rem 0.25rem;
+  background-color: var(--aat-surface);
 }
 
 /* Sidebar sections are panels; the filters form brings its own title. */
