@@ -370,7 +370,8 @@ table.data-table td[data-selected-cell] {
 .formtastic :where(.label) {
   @apply mb-0.5;
   font-size: 1em;
-  color: var(--aat-text-muted);
+  font-weight: 700;
+  color: var(--aat-filter-label);
 }
 .formtastic :where(.inputs, .has-many-fields) {
   @apply mb-3;

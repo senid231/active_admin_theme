@@ -174,7 +174,7 @@ All colors are CSS custom properties with a light value on `:root` and a dark va
 | `--aat-button`, `--aat-button-hover`, `--aat-button-text` | Buttons and action items. Every action item is a filled button. |
 | `--aat-header-bg`, `--aat-header-text`, `--aat-header-border`, `--aat-menu-*` | Header and top menu |
 | `--aat-titlebar-bg`, `--aat-titlebar-text`, `--aat-titlebar-muted` | Title band: background, page title, breadcrumbs. Dark in both modes. |
-| `--aat-table-header`, `--aat-filter-label` | Index table header, filter labels |
+| `--aat-table-header`, `--aat-filter-label` | Index table header; filter and form field labels |
 | `--aat-flash-notice`, `--aat-flash-alert`, `--aat-flash-error`, each with a `-border` variant | Flash band fill and bottom border, the same in both modes |
 
 Two more properties set sizes:
