@@ -1,39 +1,33 @@
-/* Flash messages: a tint of the type's color on the surface, in both modes. */
+/* Flash messages as in theme 3.x: solid full-width bands right under the title band. */
+#page-header:has(+ .aat-flashes) {
+  margin-bottom: 0;
+}
 .aat-flashes {
   margin-bottom: 0.75rem;
-  padding-inline: 0.625rem;
+}
+.aat-flash {
+  padding: 13px 0.625rem 11px;
+  border-bottom: 2px solid var(--aat-flash-border);
+  background-color: var(--aat-flash-color);
+  color: #ffffff;
+  font-size: 1.1em;
+  font-weight: 700;
+  line-height: 1;
 }
 @media (width >= 48rem) {
-  .aat-flashes {
+  .aat-flash {
     padding-inline: 1rem;
   }
 }
-.aat-flash {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.375rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.25rem;
-  color: color-mix(in srgb, var(--aat-flash-color) 70%, black);
-  background-color: color-mix(in srgb, var(--aat-flash-color) 14%, var(--aat-surface));
-  border: 1px solid color-mix(in srgb, var(--aat-flash-color) 35%, transparent);
-}
-.dark .aat-flash {
-  color: color-mix(in srgb, var(--aat-flash-color) 45%, white);
-  background-color: color-mix(in srgb, var(--aat-flash-color) 20%, var(--aat-surface));
-}
 .aat-flash[data-flash="notice"] {
   --aat-flash-color: var(--aat-flash-notice);
+  --aat-flash-border: var(--aat-flash-notice-border);
 }
 .aat-flash[data-flash="alert"] {
   --aat-flash-color: var(--aat-flash-alert);
+  --aat-flash-border: var(--aat-flash-alert-border);
 }
 .aat-flash[data-flash="error"] {
   --aat-flash-color: var(--aat-flash-error);
-}
-.aat-flash-icon {
-  flex: none;
-  width: 1rem;
-  height: 1rem;
+  --aat-flash-border: var(--aat-flash-error-border);
 }

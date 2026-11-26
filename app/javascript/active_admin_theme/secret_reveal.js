@@ -5,7 +5,7 @@
 const csrfToken = () => document.querySelector("meta[name=csrf-token]")?.content
 
 const hide = (root, button) => {
-  button.textContent = root.dataset.mask
+  button.querySelector(".aat-secret-reveal-value").textContent = root.dataset.mask
   button.title = "Click to reveal"
   delete root.dataset.revealed
 }
@@ -27,7 +27,7 @@ const reveal = async (root, button) => {
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const data = await response.json()
     if (typeof data.value === "undefined" || data.value === null) throw new Error("no value in the reply")
-    button.textContent = String(data.value)
+    button.querySelector(".aat-secret-reveal-value").textContent = String(data.value)
     button.title = "Click to hide"
     root.dataset.revealed = ""
   } catch (e) {

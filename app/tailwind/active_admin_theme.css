@@ -45,9 +45,12 @@
   --aat-button-text: #ffffff;
   --aat-table-header: #e6e9ee;
   --aat-filter-label: var(--color-gray-700);
-  --aat-flash-notice: #5e7e63;
-  --aat-flash-alert: #9e6c15;
-  --aat-flash-error: #ce483b;
+  --aat-flash-notice: #669148;
+  --aat-flash-notice-border: #4c7331;
+  --aat-flash-alert: #bdbc45;
+  --aat-flash-alert-border: #8b8a3d;
+  --aat-flash-error: #cd3333;
+  --aat-flash-error-border: #962f2f;
   --aat-header-bg: #23282f;
   --aat-header-text: #dfe2e6;
   --aat-header-border: #444d5b;
@@ -181,6 +184,7 @@
 }
 .attributes-table :where(tbody > tr > th) {
   font-size: 0.9em;
+  background-color: transparent;
 }
 /* The label column takes its content's width up to --aat-label-cap; a longer label wraps.
    A table for several records has col elements and keeps the table layout. */

@@ -142,7 +142,7 @@ A host partial with the same path overrides the theme's. Copy the partial from t
 - `_page_heading`, `_breadcrumbs`, `_page_title`: the breadcrumbs and the page title, on one row of the dark title band. A host copy must keep light text there: use `--aat-titlebar-text` and `--aat-titlebar-muted`.
 - `_page_content`: the grid that holds the sidebar and the page, and the tab that collapses the sidebar.
 - `_sidebar`.
-- `_flash_messages`: the flash boxes.
+- `_flash_messages`: the flash bands under the title band.
 - `kaminari/*`: the page links under an index table, with "First", "Next ›" and "Last »".
 
 The index footer is one line under the table: per page, page links, the count, and the download links. Its English wording ("Displaying Orders 1 - 30 of 60 in total") comes from the theme's `config/locales/active_admin_theme.en.yml`; your own locale file overrides it, and other languages keep ActiveAdmin's text.
@@ -175,7 +175,7 @@ All colors are CSS custom properties with a light value on `:root` and a dark va
 | `--aat-header-bg`, `--aat-header-text`, `--aat-header-border`, `--aat-menu-*` | Header and top menu |
 | `--aat-titlebar-bg`, `--aat-titlebar-text`, `--aat-titlebar-muted` | Title band: background, page title, breadcrumbs. Dark in both modes. |
 | `--aat-table-header`, `--aat-filter-label` | Index table header, filter labels |
-| `--aat-flash-notice`, `--aat-flash-alert`, `--aat-flash-error` | Flash messages, tinted from these in both modes |
+| `--aat-flash-notice`, `--aat-flash-alert`, `--aat-flash-error`, each with a `-border` variant | Flash band fill and bottom border, the same in both modes |
 
 Two more properties set sizes:
 
@@ -271,7 +271,7 @@ text_node pre_wrap(response.body)
 
 ### `secret_reveal`
 
-A masked value that is fetched and shown on click. The URL must return `{"value": "..."}`. Needs the `active_admin_theme/secret_reveal` script.
+A masked value with an eye icon before it. A click fetches and shows the value, and the icon turns to an eye-off icon that hides it again. The URL must return `{"value": "..."}`. Needs the `active_admin_theme/secret_reveal` script.
 
 ```ruby
 secret_reveal url: secret_admin_account_path(account), mask: "••••••••"
