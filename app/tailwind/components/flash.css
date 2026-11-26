@@ -5,6 +5,11 @@
 .aat-flashes {
   margin-bottom: 0.75rem;
 }
+@media (width >= 48rem) {
+  .aat-flashes {
+    margin-bottom: 1.75rem;
+  }
+}
 .aat-flash {
   padding: 13px 0.625rem 11px;
   border-bottom: 2px solid var(--aat-flash-border);

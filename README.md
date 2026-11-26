@@ -180,7 +180,6 @@ All colors are CSS custom properties with a light value on `:root` and a dark va
 Two more properties set sizes:
 
 - `--aat-font-size` (default `0.75rem`, 12px) is the base text size of the page, tables, forms, filters, and buttons. Smaller texts, such as filter labels and status tags, scale from it.
-- `--aat-label-bg` tints the label cells of an `attributes_table`. It defaults to the surface with 4% of the text colour mixed in.
 - `--aat-label-cap` is the widest the label column of a show page's `attributes_table` gets. The column takes the width of its labels up to the cap; a longer label wraps.
 
 ## DSL
