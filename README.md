@@ -137,10 +137,15 @@ A host partial with the same path overrides the theme's. Copy the partial from t
 - `_header_leading`: the menu button and the site title.
 - `_header_navigation`: the top menu.
 - `_main_navigation`: the mobile drawer menu.
-- `_header_actions`: the server clock, the dark mode switch, the current user, and the logout icon.
-- `_page_heading`, `_breadcrumbs`, `_page_title`: the sidebar toggle, the breadcrumbs, and the page title.
-- `_page_content`: the grid that holds the sidebar and the page.
+- `_header_actions`: the right end of the header. In order: the dark mode switch, the server clock, `_header_links`, the current user, and the logout icon.
+- `_header_links`: empty. Override it to add your own links between the clock and the current user.
+- `_page_heading`, `_breadcrumbs`, `_page_title`: the breadcrumbs and the page title, on one row of the dark title band. A host copy must keep light text there: use `--aat-titlebar-text` and `--aat-titlebar-muted`.
+- `_page_content`: the grid that holds the sidebar and the page, and the tab that collapses the sidebar.
 - `_sidebar`.
+- `_flash_messages`: the flash boxes.
+- `kaminari/*`: the page links under an index table, with "First", "Next ›" and "Last »".
+
+The index footer is one line under the table: per page, page links, the count, and the download links. Its English wording ("Displaying Orders 1 - 30 of 60 in total") comes from the theme's `config/locales/active_admin_theme.en.yml`; your own locale file overrides it, and other languages keep ActiveAdmin's text.
 
 ActiveAdmin renders these partials from its own layout once it has the layout hooks ([activeadmin/activeadmin#9149](https://github.com/activeadmin/activeadmin/pull/9149) to [#9152](https://github.com/activeadmin/activeadmin/pull/9152)). Until then, the theme also ships copies of the layout, `_site_header`, `_page_header`, and `_html_head` in `app/views_compat` that render the same partials. The engine adds that directory to the view paths only when the installed ActiveAdmin lacks the hooks, so override the small partials above rather than those copies.
 
@@ -166,8 +171,16 @@ All colors are CSS custom properties with a light value on `:root` and a dark va
 | `--aat-text`, `--aat-text-muted`, `--aat-border` | Text and borders |
 | `--aat-input-bg`, `--aat-input-border` | Form controls |
 | `--aat-accent`, `--aat-link` | Accent and links |
-| `--aat-button`, `--aat-button-text` | Buttons and action items |
-| `--aat-header-bg`, `--aat-header-text`, `--aat-menu-*` | Header and top menu |
+| `--aat-button`, `--aat-button-hover`, `--aat-button-text` | Buttons and action items. Every action item is a filled button. |
+| `--aat-header-bg`, `--aat-header-text`, `--aat-header-border`, `--aat-menu-*` | Header and top menu |
+| `--aat-titlebar-bg`, `--aat-titlebar-text`, `--aat-titlebar-muted` | Title band: background, page title, breadcrumbs. Dark in both modes. |
+| `--aat-table-header`, `--aat-filter-label` | Index table header, filter labels |
+| `--aat-flash-notice`, `--aat-flash-alert`, `--aat-flash-error` | Flash messages, tinted from these in both modes |
+
+Two more properties set sizes:
+
+- `--aat-font-size` (default `0.75rem`, 12px) is the base text size of the page, tables, forms, filters, and buttons. Smaller texts, such as filter labels and status tags, scale from it.
+- `--aat-label-cap` is the widest the label column of a show page's `attributes_table` gets. The column takes the width of its labels up to the cap; a longer label wraps.
 
 ## DSL
 
@@ -223,6 +236,8 @@ status_tag "Shipped"                # uses --aat-status-shipped, if you define i
 status_tag "Late", color: "#b91c1c"
 ```
 
+Tags are square, small, and shown in uppercase, as in theme 3. The case is CSS only, so the HTML keeps the text you pass, while a browser test driver reads it in uppercase.
+
 ### `truncate_text`
 
 One line of text with an ellipsis and the full value in the `title` attribute:
@@ -275,6 +290,8 @@ confirm_dialog "Reject", title: "Reject order", message: "The buyer is notified.
     {name: :notify, label: "Notify the buyer", as: :boolean, value: true}
   ]
 ```
+
+The dialog has a title bar. Its buttons sit at the left, the confirm button first, then Cancel.
 
 Field types are `:string`, `:text`, `:select`, and `:boolean`. More options:
 
@@ -470,7 +487,7 @@ In the top menu each deeper level flies out beside its item, and in the drawer i
 
 ## Header
 
-The header shows the site title, the top menu, a server clock, the dark mode switch, the current user, and a logout icon. They come from the signed-in user (`current_active_admin_user?`) and `config.logout_link_path`. Without a current user the header shows only the title, the menu, and the dark mode switch. To change the header, override `_header_actions.html.erb`, `_header_leading.html.erb`, or `_header_navigation.html.erb`.
+The header shows the site title and the top menu, and at its right end the dark mode switch, a server clock, your own links, the current user, and a logout icon. The clock, the user, and the logout icon come from the signed-in user (`current_active_admin_user?`) and `config.logout_link_path`. Without a current user the header shows only the title, the menu, the dark mode switch, and your links. To add links, override `_header_links.html.erb`, which is empty. To change the rest, override `_header_actions.html.erb`, `_header_leading.html.erb`, or `_header_navigation.html.erb`.
 
 ## Page objects
 
@@ -565,7 +582,7 @@ A component is found inside any scope: a page, a section, a table cell or an att
 include ActiveAdminTheme::PageObjects
 
 tag = StatusTag.find_in(index.table.row(order.id).cell(:status))
-tag.text # => "Shipped"
+tag.text # => "SHIPPED", as shown; a browser driver reads the uppercase
 tag.kind # => "shipped", its data-status
 tag.color # => "#b91c1c" with color:, or nil
 

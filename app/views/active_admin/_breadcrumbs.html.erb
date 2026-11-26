@@ -1,11 +1,11 @@
-<% breadcrumb_links = build_breadcrumb_links(request.path, class: "no-underline text-(--aat-text-muted) hover:text-(--aat-text)") %>
+<% breadcrumb_links = build_breadcrumb_links(request.path, class: "no-underline text-inherit hover:text-(--aat-titlebar-text)") %>
 <% if breadcrumb_links.present? %>
-  <nav aria-label="breadcrumb">
-    <ol class="flex flex-wrap items-center gap-x-1 text-xs text-(--aat-text-muted)">
-      <% breadcrumb_links.each_with_index do |link, index| %>
-        <li class="inline-flex items-center gap-1">
-          <% if index > 0 %><span aria-hidden="true">/</span><% end %>
+  <nav aria-label="breadcrumb" class="min-w-0">
+    <ol class="flex flex-wrap items-center gap-x-1.5 text-xs uppercase text-(--aat-titlebar-muted)">
+      <% breadcrumb_links.each do |link| %>
+        <li class="inline-flex items-center gap-1.5">
           <%= link %>
+          <span aria-hidden="true">/</span>
         </li>
       <% end %>
     </ol>

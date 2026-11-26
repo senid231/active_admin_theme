@@ -1,0 +1,62 @@
+/* The index footer on one line under the table: per page, pages, count, downloads. */
+.paginated-collection {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+  font-size: 0.95em;
+}
+.paginated-collection-contents {
+  flex: 0 0 100%;
+  min-width: 0;
+  font-size: var(--aat-font-size);
+  border: 1px solid var(--aat-border);
+  border-radius: 0.25rem;
+}
+.paginated-collection-pagination,
+.paginated-collection-footer {
+  display: contents;
+}
+/* Two classes: the base stylesheet's font-size list names the footer and comes later. */
+.paginated-collection > .paginated-collection-footer {
+  font-size: inherit;
+}
+.paginated-collection-footer > :where(div:has(> .pagination-per-page)) {
+  order: 1;
+}
+.aat-pagination {
+  order: 2;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.9em;
+  font-weight: 700;
+}
+.pagination-information {
+  order: 3;
+}
+.paginated-collection-footer > :where(div:not(:has(> .pagination-per-page))) {
+  order: 4;
+}
+.pagination-per-page {
+  padding-block: 0.0625rem;
+  font-size: 1em;
+}
+.aat-page {
+  padding: 0.3125rem 0.625rem;
+  line-height: 1.5;
+  text-decoration: none;
+  color: var(--aat-text);
+  background-color: var(--aat-surface-2);
+  border-radius: 0.25rem;
+}
+a.aat-page:hover,
+.aat-page[aria-current="page"] {
+  color: #ffffff;
+  background-color: var(--aat-accent);
+}

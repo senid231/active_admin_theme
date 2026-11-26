@@ -10,7 +10,7 @@ class PageObjectsComponentsTest < PageObjectsTestCase
     index = Pages::CustomerIndex.new
     index.load
     tag = Theme::StatusTag.find_in(index.table.row(2).cell(:status))
-    assert_equal "Pending", tag.text
+    assert_equal "PENDING", tag.text
     assert_equal "pending", tag.kind
     assert_nil tag.color
     assert_equal "active", Theme::StatusTag.find_in(customer_show(1).attributes_table.row(:status)).kind
@@ -20,6 +20,11 @@ class PageObjectsComponentsTest < PageObjectsTestCase
     tags = Theme::StatusTag.all_in(components.panel("Status tags").body)
     assert_equal %w[ok warning error info empty yes shipped unstyled no late], tags.map(&:kind)
     assert_equal "#b91c1c", tags.last.color
+  end
+
+  def test_attributes_table_of_one_record_has_table_roles
+    customer_show
+    assert_selector ".attributes-table > table[role=table] tr[role=row][data-row=name] > th[role=rowheader] + td[role=cell]"
   end
 
   def test_truncate_text_reads_the_full_text

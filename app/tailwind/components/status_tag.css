@@ -46,3 +46,15 @@
   background-color: var(--aat-status-bg, color-mix(in oklab, var(--color-gray-400) 20%, transparent));
   color: var(--aat-status-fg, var(--color-gray-400));
 }
+
+/* Shape as in theme v3: square, uppercase, small. */
+.status-tag {
+  padding: 0.1875rem 0.3125rem 0.125rem;
+  font-size: 0.8em;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.15em;
+  text-indent: 0.15em;
+  text-transform: uppercase;
+  border-radius: 2px;
+}

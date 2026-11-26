@@ -37,22 +37,32 @@ body.dark:has(.aat-confirm-modal.flex) > div[class*="bg-gray-900/50"] {
   margin: auto;
   width: 100%;
   max-width: 28rem;
-  padding: 1rem;
   color: var(--aat-text);
   background-color: var(--aat-surface);
   border: 1px solid var(--aat-border);
   border-radius: 0.375rem;
   box-shadow: 0 10px 30px rgb(0 0 0 / 0.25);
 }
+/* The title bar rounds its own top corners: clipping the panel would cut a select's dropdown. */
 .aat-confirm-title {
-  margin: 0 0 0.5rem;
-  font-size: 1rem;
-  font-weight: 600;
+  margin: 0 0 0.75rem;
+  padding: 0.3125rem 0.9375rem;
+  font-size: var(--aat-font-size);
+  font-weight: 700;
+  line-height: 1.125rem;
+  color: var(--aat-text-muted);
+  background-color: var(--aat-page-bg);
+  border-bottom: 1px solid var(--aat-border);
+  border-radius: calc(0.375rem - 1px) calc(0.375rem - 1px) 0 0;
+}
+.aat-confirm-message,
+.aat-confirm-body {
+  padding-inline: 0.9375rem;
+  font-size: var(--aat-font-size);
 }
 .aat-confirm-message {
   margin: 0 0 0.75rem;
-  font-size: 0.875rem;
-  color: var(--aat-text-muted);
+  color: var(--aat-text);
   overflow-wrap: anywhere;
 }
 .aat-confirm-field {
@@ -61,14 +71,14 @@ body.dark:has(.aat-confirm-modal.flex) > div[class*="bg-gray-900/50"] {
 .aat-confirm-label {
   display: block;
   margin-bottom: 0.125rem;
-  font-size: 0.75rem;
-  color: var(--aat-text-muted);
+  font-size: 1em;
+  color: var(--aat-text);
 }
 .aat-confirm-check {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.875rem;
+  font-size: 1em;
 }
 .aat-confirm-field[data-required] > .aat-confirm-label::after,
 .aat-confirm-field[data-required] > .aat-confirm-check > span::after {
@@ -79,7 +89,7 @@ body.dark:has(.aat-confirm-modal.flex) > div[class*="bg-gray-900/50"] {
   display: block;
   width: 100%;
   padding: 0.375rem 0.5rem;
-  font-size: 1rem;
+  font-size: 0.95em;
   color: var(--aat-text);
   background-color: var(--aat-input-bg);
   border: 1px solid var(--aat-input-border);
@@ -99,9 +109,10 @@ body.dark:has(.aat-confirm-modal.flex) > div[class*="bg-gray-900/50"] {
 
 .aat-confirm-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 0.5rem;
-  margin-top: 1rem;
+  margin-top: 0.75rem;
+  padding: 0 0.9375rem 0.8125rem;
 }
 .aat-confirm-trigger,
 .aat-confirm-cancel,
@@ -112,6 +123,12 @@ body.dark:has(.aat-confirm-modal.flex) > div[class*="bg-gray-900/50"] {
   border-radius: 0.25rem;
   cursor: pointer;
 }
+.aat-confirm-cancel,
+.aat-confirm-submit {
+  padding: 0.375rem 1.25rem;
+  font-size: var(--aat-font-size);
+  font-weight: 700;
+}
 .aat-confirm-trigger,
 .aat-confirm-submit {
   color: var(--aat-button-text);
@@ -120,11 +137,11 @@ body.dark:has(.aat-confirm-modal.flex) > div[class*="bg-gray-900/50"] {
 }
 .aat-confirm-trigger:hover,
 .aat-confirm-submit:hover {
-  filter: brightness(1.12);
+  background-color: var(--aat-button-hover);
 }
 .aat-confirm-cancel {
   color: var(--aat-text);
-  background-color: var(--aat-surface-2);
+  background-color: var(--aat-surface);
   border: 1px solid var(--aat-border);
 }
 .aat-confirm-cancel:hover {
@@ -133,7 +150,11 @@ body.dark:has(.aat-confirm-modal.flex) > div[class*="bg-gray-900/50"] {
 
 @media (width < 30rem) {
   .aat-confirm-actions {
-    flex-direction: column-reverse;
+    flex-direction: column;
+  }
+  /* iOS zooms the page when a focused control is under 16px. */
+  .aat-confirm-input {
+    font-size: 1rem;
   }
   .aat-confirm-cancel,
   .aat-confirm-submit {

@@ -10,7 +10,7 @@ module ActiveAdminTheme
         ConfirmDialog.find_in(self, trigger, dialog: dialog)
       end
 
-      # Hides the sidebar with the switch next to the page title (desktop).
+      # Hides the sidebar with the tab on its edge (desktop).
       def collapse_sidebar
         find(:active_admin, :sidebar_toggle).click unless sidebar_collapsed?
         has_css?(ActiveAdminPageObjects.selector(:sidebar_collapsed))

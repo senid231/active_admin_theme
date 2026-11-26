@@ -36,14 +36,16 @@ Sass variables are gone. Set CSS custom properties instead, light on `:root` and
 | `$skinMainFirstColor` (header) | `--aat-header-bg` |
 | `$skinMenu*` | `--aat-menu-*` |
 
-Sizing variables (header padding, title bar height, and so on) are not ported. Override the Tailwind classes in the partials, or copy the partial into your app.
+The button color is `--aat-button`, with `--aat-button-hover` for its hover. The title band keeps theme 3's dark background in both modes (`--aat-titlebar-bg`).
+
+Sizing variables (header padding, title bar height, and so on) are not ported. Override the Tailwind classes in the partials, or copy the partial into your app. The base text size is one property, `--aat-font-size` (12px by default).
 
 ## Utility navigation, server clock, and logout
 
 ActiveAdmin 4 removed `build_menu :utility_navigation` and `add_logout_button_to_menu`. The theme now renders the server clock, the current user, and the logout icon in its header partial, so you no longer add them:
 
 - Delete any `ActiveAdminTheme.add_current_user = false` line. To hide the user or the clock, override `app/views/active_admin/_header_actions.html.erb`.
-- Delete any items you added to the `:utility_navigation` menu. Put the content in `_header_actions.html.erb` instead.
+- Delete any items you added to the `:utility_navigation` menu. Put the links in `app/views/active_admin/_header_links.html.erb` instead; the theme renders that partial between the clock and the current user.
 - Logout still follows `config.logout_link_path`; set it to `nil` to remove the icon.
 
 ## Nested menus
@@ -71,6 +73,11 @@ ActiveAdmin 4 dropped menus deeper than one submenu level, but the theme keeps t
 | Sortable has-many forms | Removed by ActiveAdmin 4. |
 
 Extensions that depend on ActiveAdmin 3 internals (calendar, table footer, and others) are not part of this gem and may block your migration.
+
+## Tests that read the page
+
+- Status tags are uppercase through CSS, as in theme 3. A browser driver reads `PENDING` where the HTML says `Pending`, so compare status tag text ignoring case.
+- Flash messages and page links come from the theme's own partials. Select them by `.aat-flash[data-flash="notice"]` (or `alert`, `error`) and `a.aat-page-next`, not by ActiveAdmin's utility classes. The theme's page objects already do.
 
 ## Not ported
 

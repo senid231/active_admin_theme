@@ -57,8 +57,8 @@ module ActiveAdminTheme
                 Array(options[:fields]).each { |field| build_field(dialog_id, field) }
               end
               div class: "aat-confirm-actions" do
-                button i18n_text(options[:cancel_text], :cancel, "Cancel"), type: "button", class: "aat-confirm-cancel", "data-modal-hide": dialog_id
                 button i18n_text(options[:confirm_text], :confirm, "Confirm"), type: "submit", class: "aat-confirm-submit"
+                button i18n_text(options[:cancel_text], :cancel, "Cancel"), type: "button", class: "aat-confirm-cancel", "data-modal-hide": dialog_id
               end
             end
           end

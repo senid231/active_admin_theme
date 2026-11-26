@@ -3,7 +3,7 @@ module ActiveAdminTheme
     # A `status_tag`.
     #
     #   tag = StatusTag.find_in(index.table.row(1).cell(:status))
-    #   tag.text # => "Active"
+    #   tag.text # => "ACTIVE": a browser driver reads the text as shown, in uppercase
     #   tag.kind # => "active"
     class StatusTag < Component
       selector_key :status_tag

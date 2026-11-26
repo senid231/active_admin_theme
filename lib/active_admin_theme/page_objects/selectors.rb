@@ -13,6 +13,16 @@ ActiveAdminPageObjects.register_selectors(
   sidebar_toggle: "[data-aat-sidebar-toggle]",
   sidebar_collapsed: "[data-aat-page][data-aat-sidebar-collapsed]",
 
+  # The theme's own flash and kaminari partials.
+  flashes: ".aat-flashes",
+  flash: ".aat-flash",
+  flash_notice: ".aat-flash[data-flash='notice']",
+  flash_alert: ".aat-flash[data-flash='alert']",
+  flash_error: ".aat-flash[data-flash='error']",
+  pagination_current: "a[aria-current='page']",
+  pagination_next: "a.aat-page-next",
+  pagination_previous: "a.aat-page-prev",
+
   # ActiveAdmin 4 removed tabs; the theme renders its own.
   tabs: ".aat-tabs",
   tabs_nav: ".aat-tabs-nav",

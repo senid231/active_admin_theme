@@ -11,6 +11,9 @@
 @import "./components/secret_reveal.css";
 @import "./components/pre_wrap.css";
 @import "./components/searchable_select.css";
+@import "./components/sidebar_tab.css";
+@import "./components/pagination.css";
+@import "./components/flash.css";
 
 /*
  * ActiveAdmin releases with the layout hooks (activeadmin/activeadmin#9149 to
@@ -23,6 +26,8 @@
 :root {
   --aa-header-height: 2.5rem;
   --active-admin-theme: 4;
+  --aat-font-size: 0.75rem;
+  --aat-label-cap: 7rem;
   --aat-page-bg: #f7f9fb;
   --aat-surface: #ffffff;
   --aat-surface-2: #f0f2f5;
@@ -35,10 +40,20 @@
   --aat-input-border: #c9ced4;
   --aat-accent: #5ea3d3;
   --aat-link: #38678b;
-  --aat-button: #25607f;
+  --aat-button: #2c709f;
+  --aat-button-hover: #23597f;
   --aat-button-text: #ffffff;
+  --aat-table-header: #e6e9ee;
+  --aat-filter-label: var(--color-gray-700);
+  --aat-flash-notice: #5e7e63;
+  --aat-flash-alert: #9e6c15;
+  --aat-flash-error: #ce483b;
   --aat-header-bg: #23282f;
   --aat-header-text: #dfe2e6;
+  --aat-header-border: #444d5b;
+  --aat-titlebar-bg: #343c46;
+  --aat-titlebar-text: #ffffff;
+  --aat-titlebar-muted: #aab2ba;
   --aat-menu-pill: #2e3236;
   --aat-menu-panel: #2e3236;
   --aat-menu-text: #dfe2e6;
@@ -58,6 +73,24 @@
   --aat-input-bg: #1e2227;
   --aat-input-border: #4d555f;
   --aat-link: #7cc0ec;
+  --aat-table-header: #363c43;
+  --aat-filter-label: #dde2e8;
+}
+
+@media (width >= 48rem) {
+  :root {
+    --aat-label-cap: 9rem;
+  }
+}
+@media (width >= 64rem) {
+  :root {
+    --aat-label-cap: 11rem;
+  }
+}
+@media (width >= 80rem) {
+  :root {
+    --aat-label-cap: 13rem;
+  }
 }
 
 #site-header a {
@@ -67,13 +100,57 @@
 /* Dense tables: tight cell padding. Index tables keep one line per row;
    a table_for on a show page wraps long values inside its panel. */
 .data-table :where(td) {
-  @apply px-2.5 py-1.5;
+  padding: 0.3125rem 0.75rem;
 }
 :where(.index-as-table) .data-table :where(td) {
   @apply whitespace-nowrap;
 }
 .data-table :where(thead > tr > th) {
-  @apply px-2.5 py-2 whitespace-nowrap;
+  @apply whitespace-nowrap;
+  padding: 0.3125rem 0.75rem;
+}
+:where(.index-as-table) .data-table :where(thead > tr > th) {
+  font-size: 1em;
+  font-weight: 700;
+  text-transform: none;
+  color: var(--aat-text);
+  background-color: var(--aat-table-header);
+  border-bottom: 1px solid var(--aat-border);
+  border-inline-end: 1px solid var(--aat-border);
+}
+:where(.index-as-table) .data-table :where(thead > tr > th:last-child) {
+  border-inline-end: 0;
+}
+.data-table :where(thead > tr > th > a) {
+  gap: 0.375rem;
+}
+/* Sort marks: both arrows on a sortable column, one on the sorted column. */
+.data-table-sorted-icon {
+  display: none;
+}
+.data-table :where(th[data-sortable] > a)::after {
+  content: "";
+  flex: none;
+  width: 9px;
+  height: 12px;
+  background-color: currentColor;
+  opacity: 0.6;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 12'%3E%3Cpath d='M4.5 0 9 5H0z'/%3E%3Cpath d='M4.5 12 0 7h9z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.data-table :where(th[data-sort-direction="asc"] > a)::after {
+  opacity: 1;
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 12'%3E%3Cpath d='M4.5 2 9 8H0z'/%3E%3C/svg%3E");
+}
+.data-table :where(th[data-sort-direction="desc"] > a)::after {
+  opacity: 1;
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 12'%3E%3Cpath d='M4.5 10 0 4h9z'/%3E%3C/svg%3E");
+}
+/* Striped rows. Selected comes after the stripe, which has the same specificity. */
+.data-table :where(tbody > tr) > td {
+  background-color: var(--aat-surface);
+}
+.data-table :where(tbody > tr:nth-child(even)) > td {
+  background-color: var(--aat-surface-2);
 }
 .data-table :where(tbody > tr):hover > td {
   background-color: var(--aat-surface-hover);
@@ -88,7 +165,7 @@
   @apply mb-3;
 }
 .panel-title {
-  @apply px-2.5 py-1.5 text-sm;
+  @apply px-2.5 py-1.5;
 }
 .panel-body {
   @apply px-2.5 py-2;
@@ -102,34 +179,78 @@
   width: 100%;
   overflow-x: auto;
 }
+.attributes-table :where(tbody > tr > th) {
+  font-size: 0.9em;
+}
+/* The label column takes its content's width up to --aat-label-cap; a longer label wraps.
+   A table for several records has col elements and keeps the table layout. */
+.attributes-table > :where(table:not(:has(col))) {
+  display: grid;
+  grid-template-columns: fit-content(min(var(--aat-label-cap), 45%)) minmax(0, 1fr);
+}
+.attributes-table > :where(table:not(:has(col))) > :where(tbody),
+.attributes-table > :where(table:not(:has(col))) > :where(tbody) > :where(tr) {
+  display: contents;
+}
+.attributes-table > :where(table:not(:has(col))) :where(tbody > tr > th) {
+  width: auto;
+}
+.attributes-table > :where(table:not(:has(col))) :where(tbody > tr > td) {
+  width: auto;
+  max-width: none;
+  min-width: 0;
+}
+/* A row with display: contents draws no border, so its cells carry the row line. */
+.attributes-table > :where(table:not(:has(col))) :where(tbody > tr:not(:last-child)) > :where(th, td) {
+  border-bottom: 1px solid var(--aat-border);
+}
+.dark .attributes-table > :where(table:not(:has(col))) :where(tbody > tr:not(:last-child)) > :where(th, td) {
+  border-bottom-color: var(--color-gray-800);
+}
 
 /* Filters. */
 .filters-form {
   @apply mb-3;
 }
 .filters-form-title {
-  @apply text-sm mb-2;
+  @apply mb-2;
+  font-size: 1em;
 }
 .filters-form-field {
   @apply mb-2;
 }
 .filters-form :where(.label) {
-  @apply mb-0.5 text-xs;
+  @apply mb-0.5;
+  font-size: 0.9em;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--aat-filter-label);
 }
 
 /* Action items are always buttons, the trigger of a confirm_dialog included. */
 #action-items > a,
 #action-items > button,
 #action-items > input[type="submit"],
+#action-items > form > :where(button, input[type="submit"]),
 #action-items .aat-confirm-trigger {
-  @apply inline-flex items-center rounded px-2.5 py-1 text-[13px] leading-5 no-underline cursor-pointer;
-  background-color: var(--aat-button);
+  @apply inline-flex items-center rounded no-underline cursor-pointer;
+  padding: 0.375rem 0.625rem;
+  font-size: var(--aat-font-size);
+  font-weight: 600;
+  line-height: 1;
   color: var(--aat-button-text);
+  background-color: var(--aat-button);
+  border: 0;
 }
 #action-items > a:hover,
 #action-items > button:hover,
+#action-items > input[type="submit"]:hover,
+#action-items > form > :where(button, input[type="submit"]):hover,
 #action-items .aat-confirm-trigger:hover {
-  filter: brightness(1.12);
+  background-color: var(--aat-button-hover);
+}
+#action-items > form {
+  display: inline-flex;
 }
 
 /* Crisscross highlighting (table_crisscross.js). */
@@ -213,6 +334,16 @@ table.data-table td[data-selected-cell] {
   display: none;
 }
 
+/* A plain list in a sidebar section shows its markers, as in ActiveAdmin 3. */
+[data-aat-sidebar] :where(.panel-body) :where(ul:not([class])) {
+  padding-inline-start: 1.5em;
+  list-style: disc;
+}
+[data-aat-sidebar] :where(.panel-body) :where(ol:not([class])) {
+  padding-inline-start: 1.5em;
+  list-style: decimal;
+}
+
 /* Long preformatted text scrolls inside its box instead of widening the page. */
 [data-aat-page] pre {
   overflow-x: auto;
@@ -233,34 +364,78 @@ table.data-table td[data-selected-cell] {
   @apply py-1.5;
 }
 .formtastic :where(.label) {
-  @apply mb-0.5 text-xs;
+  @apply mb-0.5;
+  font-size: 1em;
   color: var(--aat-text-muted);
 }
 .formtastic :where(.inputs, .has-many-fields) {
   @apply mb-3;
 }
 .formtastic :where(.fieldset-title, .has-many-fields-title) {
-  @apply text-sm mb-2;
+  @apply mb-2;
+  font-size: 1em;
 }
-.formtastic :where(input:not([type="checkbox"], [type="radio"], [type="submit"], [type="button"]), select, textarea) {
-  @apply py-1.5;
+/* padding-block and padding-inline-start, not padding: ActiveAdmin reserves the end side for the select arrow. */
+.formtastic :where(input:not([type="checkbox"], [type="radio"], [type="submit"], [type="button"]), select, textarea),
+.filters-form :where(input:not([type="checkbox"], [type="radio"]), select, textarea) {
+  padding-block: 0.3125rem;
+  padding-inline-start: 0.5rem;
+  font-size: 0.95em;
   background-color: var(--aat-input-bg);
   border-color: var(--aat-input-border);
 }
 .formtastic :where([type="submit"], [type="button"], button) {
-  @apply rounded px-3 py-1.5 font-medium;
+  @apply rounded font-medium;
   background-color: var(--aat-button);
   color: var(--aat-button-text);
 }
 .formtastic :where([type="submit"], [type="button"], button):hover {
-  filter: brightness(1.12);
+  background-color: var(--aat-button-hover);
 }
 .filters-form-submit {
-  @apply rounded px-3 py-1.5 font-medium;
+  @apply rounded font-medium;
   background-color: var(--aat-button);
   color: var(--aat-button-text);
 }
+.formtastic :where([type="submit"], [type="button"], button),
+.filters-form-submit,
+.filters-form-clear {
+  padding: 0.375rem 0.875rem;
+}
+/* iOS zooms the page when a focused control is under 16px. */
+@media (width < 48rem) {
+  .formtastic :where(input:not([type="checkbox"], [type="radio"], [type="submit"], [type="button"]), select, textarea),
+  .filters-form :where(input:not([type="checkbox"], [type="radio"]), select, textarea) {
+    font-size: 1rem;
+  }
+}
 
+/* Index toolbar: scopes, batch actions. */
+.index-button,
+.batch-actions-dropdown-toggle {
+  height: 1.875rem;
+  padding-block: 0;
+}
+.scopes-count {
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+/* One base size for the page and for the ActiveAdmin components that pin their own;
+   smaller roles are in em of it. */
+body,
+.data-table,
+.attributes-table > :where(table),
+.filters-form,
+.formtastic,
+.paginated-collection-footer,
+.index-button,
+.batch-actions-dropdown-toggle,
+.batch-actions-dropdown-menu,
+.panel-title {
+  font-size: var(--aat-font-size);
+  line-height: 1.5;
+}
 body {
   background-color: var(--aat-page-bg);
   color: var(--aat-text);
@@ -271,6 +446,8 @@ body {
   gap: 0.75rem;
   padding: 0 0.625rem;
   border: 0;
+  /* An inset shadow, so the fixed header keeps its --aa-header-height. */
+  box-shadow: inset 0 -1px 0 var(--aat-header-border);
   backdrop-filter: none;
   background-color: var(--aat-header-bg);
   color: var(--aat-header-text);
@@ -281,16 +458,28 @@ body {
   flex-direction: column;
   align-items: stretch;
   justify-content: space-between;
-  gap: 0.75rem;
-  margin: 0;
-  padding: 0.5rem 0.625rem;
+  gap: 0.375rem 0.75rem;
+  min-height: 2.3125rem;
+  margin: 0 0 0.75rem;
+  padding: 0.375rem 0.625rem;
   border: 0;
-  background: transparent;
+  color: var(--aat-titlebar-text);
+  background-color: var(--aat-titlebar-bg);
 }
 
 #action-items {
   gap: 0.375rem;
   justify-content: flex-start;
+}
+
+/* The site footer: the element after the page content. ActiveAdmin's partial has no hook of its own. */
+[data-aat-page] + :where(div) {
+  margin: 1.5rem 0 0;
+  padding: 0.75rem 0.625rem 1.5rem;
+  font-size: 0.8em;
+  text-align: start;
+  color: var(--aat-text-muted);
+  border: 0;
 }
 
 /* Menus of any depth. In the top menu each submenu flies out beside its
@@ -334,7 +523,8 @@ body {
 
 @media (width >= 48rem) {
   #site-header,
-  #page-header {
+  #page-header,
+  [data-aat-page] + :where(div) {
     padding-inline: 1rem;
   }
 

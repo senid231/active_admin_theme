@@ -5,8 +5,8 @@
 .ts-wrapper {
   position: relative;
   width: 100%;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
+  font-size: inherit;
+  line-height: 1.5;
   color: var(--aat-text);
 }
 
@@ -29,8 +29,8 @@
   align-items: center;
   gap: 0.25rem;
   width: 100%;
-  min-height: 2.25rem;
-  padding: 0.25rem 2rem 0.25rem 0.75rem;
+  min-height: 1.8125rem;
+  padding: 0.25rem 2rem 0.25rem 0.5rem;
   overflow: hidden;
   border: 1px solid var(--aat-input-border);
   border-radius: 0.25rem;

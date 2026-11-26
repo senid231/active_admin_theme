@@ -4,6 +4,8 @@
 ActiveAdmin.register Product do
   menu false
   filter :name
+  # 120 products: the index footer gets a per-page select and four pages.
+  config.per_page = [30, 60, 120]
 
   # All defaults: Product.search, newest first, 50 per page, typing three characters.
   searchable_select_options
