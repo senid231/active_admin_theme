@@ -39,9 +39,16 @@ module ActiveAdminTheme
       end
 
       # True when `length:` cut the text. A value that only CSS clips to the
-      # width is whole in the page, so it does not count.
+      # width is whole in the page, so it does not count: see #clipped?.
       def cut?
         squish(text) != squish(full_text)
+      end
+
+      # True when CSS clips the text to the width, so the browser draws an
+      # ellipsis. Does not wait. Needs a JavaScript driver.
+      def clipped?
+        box = first(:css, ".aat-truncate-text", minimum: 0, wait: false) || root_element
+        box.session.evaluate_script("arguments[0].scrollWidth > arguments[0].clientWidth", box)
       end
 
       private

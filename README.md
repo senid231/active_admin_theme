@@ -114,6 +114,20 @@ ActiveAdminTheme.javascripts -= %w[active_admin_theme/table_crisscross]
 ActiveAdminTheme.javascripts += %w[active_admin_theme/secret_reveal]
 ```
 
+**Your own watched directory.** With an ActiveAdmin that has no `importmap_watches` setting ([activeadmin/activeadmin#9153](https://github.com/activeadmin/activeadmin/pull/9153)) and with `config.importmap.sweep_cache` on, each `ActiveAdmin.importmap.cache_sweeper(watches:)` call replaces the previous watcher. The theme makes that call from an `after_initialize` block that its initializer registers, so it runs after any `config.after_initialize` written in an engine or application class, and replaces that call's watcher. To watch your own directory too, register your block from an initializer that runs after the theme's, and pass every directory:
+
+```ruby
+initializer "my_admin.importmap", after: "active_admin_theme.importmap" do |app|
+  app.config.after_initialize do
+    ActiveAdmin.importmap.cache_sweeper(watches: [
+      ActiveAdmin::Engine.root.join("app/javascript"),
+      ActiveAdminTheme::Engine.root.join("app/javascript"),
+      root.join("app/javascript")
+    ].map(&:to_s))
+  end
+end
+```
+
 **jsbundling hosts.** The npm package exports each module (`@activeadmin-plugins/active_admin_theme/layout`, `.../server_clock`, and so on). Import the ones you want from your `active_admin` entry file, and override `app/views/active_admin/_html_head.html.erb` to load your bundle.
 
 ## Overriding
@@ -560,6 +574,8 @@ note.text # what the cell shows
 note.full_text # the whole value, from the title or the popup
 note.popup? # rendered with popup: true
 note.show_popup # hovers and returns the popup text
+note.cut? # length: cut the text
+note.clipped? # CSS clips it to the width; needs a JavaScript driver
 
 secret = SecretReveal.find_in(show.attributes_table.row(:token))
 secret.reveal # => "s3cr3t"; raises when the request fails
@@ -578,7 +594,10 @@ dialog = show.confirm_dialog("Reject") # by the text of its button
 dialog.open
 dialog.title # => "Reject order"
 dialog.fill("Reason" => "Fraud", "Notify the buyer" => true) # by field label
+dialog.fill("reason" => "Fraud") # a control of the block body, by its label, id or name
+dialog.field("reason")[:"aria-invalid"] # the control itself
 dialog.confirm # or cancel
+dialog.confirm(validate: false) # skips the browser's required check
 
 merge = show.confirm_dialog(dialog: "merge") # by the id of a dialog with trigger: false
 merge.params # => {"ids[]" => "4", "options[keep]" => "newest"}, the hidden fields by name

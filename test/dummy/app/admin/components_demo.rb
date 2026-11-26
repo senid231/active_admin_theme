@@ -34,6 +34,14 @@ ActiveAdmin.register_page "Components" do
       div(id: "truncate-popup", style: "overflow: auto; max-width: 12rem;") { truncate_text long, max_width: "8rem", popup: true }
     end
 
+    panel "Table for" do
+      div id: "table-for" do
+        table_for ["A long value in a show page table, which wraps inside its panel instead of widening the page."] do
+          column("Value") { |value| value }
+        end
+      end
+    end
+
     panel "Secret reveal" do
       div(id: "secret") { secret_reveal url: "/admin/components/secret" }
     end

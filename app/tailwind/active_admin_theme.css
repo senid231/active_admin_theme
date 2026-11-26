@@ -64,9 +64,13 @@
   color: inherit;
 }
 
-/* Dense index tables: one line per row, tight cell padding. */
+/* Dense tables: tight cell padding. Index tables keep one line per row;
+   a table_for on a show page wraps long values inside its panel. */
 .data-table :where(td) {
-  @apply px-2.5 py-1.5 whitespace-nowrap;
+  @apply px-2.5 py-1.5;
+}
+:where(.index-as-table) .data-table :where(td) {
+  @apply whitespace-nowrap;
 }
 .data-table :where(thead > tr > th) {
   @apply px-2.5 py-2 whitespace-nowrap;

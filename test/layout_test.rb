@@ -93,9 +93,11 @@ class LayoutTest < Minitest::Test
     assert page.evaluate_script("(() => { const w = document.querySelector('.index-as-table'); return w.scrollWidth > w.clientWidth })()")
   end
 
-  def test_index_cells_stay_on_one_line
+  def test_index_cells_stay_on_one_line_and_other_tables_wrap
     visit "/admin/customers"
     assert_equal "nowrap", page.evaluate_script("getComputedStyle(document.querySelector('table.data-table tbody td')).whiteSpace")
+    visit "/admin/components"
+    assert_equal "normal", page.evaluate_script("getComputedStyle(document.querySelector('#table-for td')).whiteSpace")
   end
 
   def test_server_clock_renders_and_ticks

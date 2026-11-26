@@ -35,6 +35,16 @@ class PageObjectsComponentsTest < PageObjectsTestCase
     refute Theme::TruncateText.find_in(components.find("#truncate-default")).cut?
   end
 
+  def test_truncate_text_tells_when_css_clips_it
+    components = Pages::Components.new
+    components.load
+    narrow = Theme::TruncateText.find_in(components.find("#truncate-narrow"))
+    refute narrow.cut?
+    assert narrow.clipped?
+    refute Theme::TruncateText.find_in(components.find("#truncate-length")).clipped?
+    assert Theme::TruncateText.find_in(components.find("#truncate-popup")).clipped?
+  end
+
   def test_truncate_text_reads_and_shows_its_popup
     components = Pages::Components.new
     components.load
@@ -148,6 +158,25 @@ class PageObjectsComponentsTest < PageObjectsTestCase
     dialog.fill("Reason" => "Chargeback", "Short title" => "Fraud", "Priority" => "High", "Notify customer" => true)
     dialog.confirm
     assert_text 'POST {"reason":"Chargeback","title":"Fraud","priority":"high","notify":"1"}'
+  end
+
+  def test_confirm_dialog_drives_the_controls_of_its_body
+    dialogs = Pages::ConfirmDialogs.new
+    dialogs.load
+    dialog = dialogs.confirm_dialog("Reject template").open
+    assert_empty dialog.field_labels
+    dialog.fill("Preset" => "Abuse")
+    dialog.confirm
+    assert dialog.has_open?, "the required textarea keeps the dialog open"
+    dialog.confirm(validate: false)
+    assert_text 'POST {"preset":"abuse","reason":""}'
+
+    dialogs.load
+    dialog = dialogs.confirm_dialog("Reject template").open
+    dialog.fill("reason" => "Spam text", "reject-preset" => "Spam")
+    assert_equal "Spam text", dialog.field("reason").value
+    dialog.confirm
+    assert_text 'POST {"preset":"spam","reason":"Spam text"}'
   end
 
   def test_confirm_dialog_submits_with_its_method

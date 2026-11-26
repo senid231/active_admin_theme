@@ -44,6 +44,17 @@ ActiveAdmin.register_page "Confirm dialog" do
                                       ]
     end
 
+    panel "Confirm with body controls" do
+      confirm_dialog "Reject template", id: "body-confirm", title: "Reject template?", url: "/admin/confirm_dialog/echo" do
+        label "Preset", for: "reject-preset"
+        select id: "reject-preset", name: "preset" do
+          option "Spam", value: "spam"
+          option "Abuse", value: "abuse"
+        end
+        textarea "", name: "reason", required: true, "aria-label": "Reason"
+      end
+    end
+
     panel "Submit with a method" do
       confirm_dialog "Delete customer", id: "delete-confirm", title: "Delete customer?",
                                         message: "This cannot be undone.",

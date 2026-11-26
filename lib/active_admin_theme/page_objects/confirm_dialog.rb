@@ -98,16 +98,31 @@ module ActiveAdminTheme
       end
 
       # Sets the fields by label: text for a string or text field, the option
-      # text for a select, true or false for a boolean.
+      # text for a select, true or false for a boolean. A control of the
+      # dialog body, which is not a `fields:` entry, is found by its label,
+      # id or name, as Capybara's `fill_in` finds it.
       def fill(values)
-        values.each { |label, value| fill_field(label, value) }
+        values.each { |locator, value| set_control(field(locator), value) }
         self
       end
 
+      # The input, select or textarea of the field labelled +locator+, or of
+      # the body control whose label, id or name is +locator+.
+      # @return [Capybara::Node::Element]
+      def field(locator)
+        own = modal.first(:active_admin, :confirm_dialog_field, minimum: 0, wait: false) do |node|
+          same_text?(node.find("label").text, locator.to_s)
+        end
+        own ? own.find("input:not([type=hidden]), select, textarea", match: :first) : modal.find(:field, locator.to_s)
+      end
+
       # Clicks the confirm button, which submits the dialog's form. The
-      # browser keeps the dialog open while a required field is empty.
-      def confirm
-        modal.find(:active_admin, :confirm_dialog_submit).click
+      # browser keeps the dialog open while a required field is empty;
+      # +validate: false+ skips that check, so the server's own check runs.
+      def confirm(validate: true)
+        button = modal.find(:active_admin, :confirm_dialog_submit)
+        button.session.execute_script("arguments[0].form.noValidate = true", button) unless validate
+        button.click
       end
 
       # Clicks the cancel button and waits for the dialog to close.
@@ -122,12 +137,11 @@ module ActiveAdminTheme
         find(:active_admin, :confirm_dialog_modal, visible: true)
       end
 
-      def fill_field(label, value)
-        field = modal.find(:active_admin, :confirm_dialog_field) { |node| same_text?(node.find("label").text, label) }
-        case field["data-field-type"]
-        when "boolean" then field.find("input[type=checkbox]").set(value)
-        when "select" then field.find("select").select(value.to_s)
-        else field.find("input, textarea").set(value)
+      def set_control(control, value)
+        if control.tag_name == "select"
+          control.select(value.to_s)
+        else
+          control.set(value)
         end
       end
     end
