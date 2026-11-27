@@ -1,0 +1,13 @@
+/* lazy_load: a muted placeholder that the fetched HTML replaces. */
+.aat-lazy-load {
+  display: block;
+}
+.aat-lazy-load-placeholder {
+  color: var(--aat-text-muted);
+}
+.aat-lazy-load[data-loading] {
+  cursor: progress;
+}
+.aat-lazy-load-error {
+  color: var(--aat-text-danger);
+}

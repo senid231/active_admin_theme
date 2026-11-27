@@ -63,5 +63,6 @@ ActiveAdminPageObjects.register_selectors(
   truncate_text_popup: ".aat-truncate-popup",
   tooltip: "[data-aat-tooltip]",
   pre_wrap: "pre.aat-pre-wrap",
-  columns: ".aat-columns"
+  columns: ".aat-columns",
+  lazy_load: "[data-aat-lazy-load]"
 )
