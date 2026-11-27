@@ -35,6 +35,8 @@
   --aat-selected-row: #d9e4ec;
   --aat-text: #323537;
   --aat-text-muted: #6b7177;
+  --aat-text-warning: #806500;
+  --aat-text-danger: #c62828;
   --aat-border: #e0e4e9;
   --aat-input-bg: #ffffff;
   --aat-input-border: #c9ced4;
@@ -77,6 +79,8 @@
   --aat-selected-row: #304457;
   --aat-text: #dde2e8;
   --aat-text-muted: #b0b8c2;
+  --aat-text-warning: #e0c64a;
+  --aat-text-danger: #f49b9b;
   --aat-border: #404750;
   --aat-input-bg: #1e2227;
   --aat-input-border: #4d555f;
