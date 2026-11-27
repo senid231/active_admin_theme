@@ -434,7 +434,26 @@ ActiveAdmin.register Customer do
 end
 ```
 
-The block gets the current record and runs in the view, so path helpers and `authorized?` work, but the view's instance variables do not. Related links are plain. External links open in a new tab with `rel="noopener noreferrer"`. The sections show on the show page by default; `only:`, `except:`, `if:` and `priority:` go to ActiveAdmin's sidebar. A link takes `count:`, a value or a lambda shown beside the label, and `if:`, a lambda or method name run in the view. A link whose condition is false is left out, and a section with no links is not rendered. The titles are "Related records" and "External links", from `active_admin_theme.sidebars.related_records` and `.external_links`, or from `title:`.
+The block gets the current record and runs in the view, so path helpers and `authorized?` work, but the view's instance variables do not. Related links are plain. External links open in a new tab with `rel="noopener noreferrer"`. The sections show on the show page by default; `only:`, `except:`, `if:` and `priority:` go to ActiveAdmin's sidebar. A link takes `count:`, shown beside the label, and `if:`, a lambda or method name run in the view. A link whose condition is false is left out, and a section with no links is not rendered.
+
+`count:` is a value, a lambda run in the view, or anything that answers `count`, such as a relation. A lambda may return such an object too. An Integer or a String is shown as it is, any other object is asked for its `count`, and `nil` shows no count. The count is worked out only for a link that shows.
+
+Group links with `group`. Links outside any group come first, in a list of their own:
+
+```ruby
+related_records_sidebar do |customer|
+  link "Overview", admin_customer_path(customer)
+  group "Shipping" do
+    link "Parcels", admin_parcels_path(q: {customer_id_eq: customer.id}), count: customer.parcels
+    link "Returns", admin_returns_path(q: {customer_id_eq: customer.id}), count: -> { customer.returns.open }
+  end
+  group "Billing" do
+    link "Invoices", admin_invoices_path(q: {customer_id_eq: customer.id})
+  end
+end
+```
+
+`group_headings:` on the sidebar decides whether each group gets a heading and its own list. The default, `:auto`, shows headings only when there is more than one group and more than five links, so a short sidebar stays one plain list. `true` always shows them and `false` never does; without headings the links form one list in the order they were declared. A group whose links are all left out disappears with them. The titles are "Related records" and "External links", from `active_admin_theme.sidebars.related_records` and `.external_links`, or from `title:`.
 
 ### Sticky first column
 
@@ -855,7 +874,9 @@ note.kind # => "warning"
 note.text
 
 links = LinkList.find_in(show.sidebar.panel("Related records").body)
-links.links.map(&:label) # => ["Orders", "Invoices"]; each also has href, count and external?
+links.links.map(&:label) # => ["Orders", "Invoices"]; each also has href, count, external? and group
+links.groups # => ["Shipping", "Billing"], the headings; empty when there are none
+links.links(group: "Billing")
 links.click("Orders")
 ```
 

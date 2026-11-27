@@ -1,4 +1,14 @@
 /* link_list: the links of related_records_sidebar and external_links_sidebar. */
+/* A group heading, when the section has headings. */
+.aat-link-group {
+  margin: 0.75rem 0 0.125rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--aat-text-muted);
+}
+.aat-link-lists > :first-child {
+  margin-top: 0;
+}
 .aat-link-list {
   margin: 0;
   padding: 0;

@@ -40,13 +40,64 @@ ActiveAdmin.register Customer do
 
   related_records_sidebar priority: 20 do |customer|
     link "Orders", admin_orders_path(q: {customer_id_eq: customer.id}),
-      count: -> { Order.where(customer_id: customer.id).count }, if: -> { authorized?(:read, Order) }
+      count: Order.where(customer_id: customer.id), if: -> { authorized?(:read, Order) }
     link "Paid orders", admin_orders_path(q: {customer_id_eq: customer.id, status_eq: "paid"}), if: -> { customer.status == "active" }
   end
 
   external_links_sidebar priority: 30 do |customer|
     link "Billing", "https://billing.example/customers/#{customer.id}"
     link "Mail", "https://mail.example/search?q=#{CGI.escape(customer.email)}"
+  end
+
+  # Variants of the link groups, each shown by ?links=<name> on a show page.
+  link_variant = ->(name) { -> { params[:links] == name } }
+
+  related_records_sidebar title: "Many links", priority: 50, if: link_variant.("many") do |customer|
+    link "Overview", "/admin/customers/#{customer.id}"
+    group "Shipping" do
+      link "Parcels", "/admin/orders", count: Order.where(customer_id: customer.id)
+      link "Labels", "/admin/orders", count: -> { Order.where(customer_id: customer.id, status: "paid") }
+      link "Returns", "/admin/orders"
+    end
+    group "Billing" do
+      link "Invoices", "/admin/orders", count: 7
+      link "Payments", "/admin/orders", count: -> { nil }
+    end
+  end
+
+  related_records_sidebar title: "Few links", priority: 50, if: link_variant.("few") do
+    group "Shipping" do
+      link "Parcels", "/a"
+      link "Labels", "/b"
+    end
+    group "Billing" do
+      link "Invoices", "/c"
+      link "Payments", "/d"
+    end
+  end
+
+  related_records_sidebar title: "One group", priority: 50, if: link_variant.("single") do
+    group "Billing" do
+      6.times { |i| link "Item #{i + 1}", "/item/#{i + 1}" }
+    end
+  end
+
+  related_records_sidebar title: "Headings on", priority: 50, group_headings: true, if: link_variant.("on") do
+    link "Overview", "/overview"
+    group("Shipping") { link "Parcels", "/a" }
+    group("Billing") { link "Invoices", "/b" }
+  end
+
+  related_records_sidebar title: "Headings off", priority: 50, group_headings: false, if: link_variant.("off") do
+    group("Shipping") { 3.times { |i| link "Parcel #{i + 1}", "/parcel/#{i + 1}" } }
+    link "Overview", "/overview"
+    group("Billing") { 3.times { |i| link "Invoice #{i + 1}", "/invoice/#{i + 1}" } }
+  end
+
+  related_records_sidebar title: "Hidden group", priority: 50, group_headings: true, if: link_variant.("hidden") do
+    link "Overview", "/overview"
+    group("Secret") { link "Vault", "/vault", if: -> { false } }
+    group("Open") { link "Door", "/door" }
   end
 
   # No link shows for a customer that is not closed, so the sidebar is left out.

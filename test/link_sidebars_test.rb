@@ -9,6 +9,11 @@ class LinkSidebarsTest < PageObjectsTestCase
     Pages::CustomerShow.new.tap { |show| show.load(id: id) }
   end
 
+  def variant(name, title)
+    visit "/admin/customers/1?links=#{name}"
+    link_list(Pages::CustomerShow.new, title)
+  end
+
   def link_list(show, title)
     Theme::LinkList.find_in(show.sidebar.panel(title).body)
   end
@@ -19,6 +24,7 @@ class LinkSidebarsTest < PageObjectsTestCase
     links = link_list(show, "Related records").links
     assert_equal ["Orders", "Paid orders"], links.map(&:label)
     assert_equal [Order.where(customer_id: 1).count, nil], links.map(&:count)
+    assert_equal [nil, nil], links.map(&:group)
     assert_equal [false, false], links.map(&:external?)
     assert links.first.href.end_with?("/admin/orders?q%5Bcustomer_id_eq%5D=1")
     assert_no_selector "#related-records_sidebar_section a[target]"
@@ -89,6 +95,97 @@ class LinkSidebarsTest < PageObjectsTestCase
   def test_a_sidebar_without_a_block_raises
     error = assert_raises(ArgumentError) { Sidebars.add(Struct.new(:sidebar_sections).new([]), :related_records, nil, {}, nil) }
     assert_match(/needs a block/, error.message)
+  end
+
+  def test_more_than_five_links_in_two_groups_get_headings
+    list = variant("many", "Many links")
+    assert_equal %w[Shipping Billing], list.groups
+    assert_selector "#many-links_sidebar_section ul.aat-link-list", count: 3
+    assert_equal %w[Overview Parcels Labels Returns Invoices Payments], list.links.map(&:label)
+    assert_equal [nil, "Shipping", "Shipping", "Shipping", "Billing", "Billing"], list.links.map(&:group)
+    assert_equal %w[Parcels Labels Returns], list.links(group: "Shipping").map(&:label)
+    assert_equal %w[Invoices Payments], list.links(group: "Billing").map(&:label)
+  end
+
+  def test_each_group_list_is_labelled_by_its_heading
+    variant("many", "Many links")
+    headings = all("#many-links_sidebar_section h4.aat-link-group")
+    ids = headings.map { |heading| heading[:id] }
+    assert_equal 2, ids.uniq.size
+    lists = all("#many-links_sidebar_section ul.aat-link-list")
+    assert_nil lists.first["aria-labelledby"]
+    assert_equal ids, lists.drop(1).map { |list| list["aria-labelledby"] }
+  end
+
+  def test_two_groups_of_four_links_are_one_flat_list
+    list = variant("few", "Few links")
+    assert_equal [], list.groups
+    assert_selector "#few-links_sidebar_section ul.aat-link-list", count: 1
+    assert_no_selector ".aat-link-group"
+    assert_equal %w[Parcels Labels Invoices Payments], list.links.map(&:label)
+    assert_equal [nil] * 4, list.links.map(&:group)
+  end
+
+  def test_one_group_is_a_flat_list_however_many_links_it_has
+    list = variant("single", "One group")
+    assert_equal [], list.groups
+    assert_equal 6, list.links.size
+    assert_selector "#one-group_sidebar_section ul.aat-link-list", count: 1
+  end
+
+  def test_group_headings_true_shows_headings_for_a_few_links
+    list = variant("on", "Headings on")
+    assert_equal %w[Shipping Billing], list.groups
+    assert_equal [nil, "Shipping", "Billing"], list.links.map(&:group)
+  end
+
+  def test_group_headings_false_keeps_declaration_order_in_one_list
+    list = variant("off", "Headings off")
+    assert_equal [], list.groups
+    assert_selector "#headings-off_sidebar_section ul.aat-link-list", count: 1
+    assert_equal ["Parcel 1", "Parcel 2", "Parcel 3", "Overview", "Invoice 1", "Invoice 2", "Invoice 3"], list.links.map(&:label)
+  end
+
+  def test_a_group_whose_links_are_all_hidden_is_left_out
+    list = variant("hidden", "Hidden group")
+    assert_equal ["Open"], list.groups
+    assert_equal %w[Overview Door], list.links.map(&:label)
+    assert_no_text "Secret"
+  end
+
+  def test_a_count_is_a_value_a_relation_or_a_lambda_returning_either
+    list = variant("many", "Many links")
+    counts = list.links.to_h { |link| [link.label, link.count] }
+    assert_equal Order.where(customer_id: 1).count, counts["Parcels"]
+    assert_equal Order.where(customer_id: 1, status: "paid").count, counts["Labels"]
+    assert_equal [nil, nil, nil], counts.values_at("Overview", "Returns", "Payments")
+    assert_equal 7, counts["Invoices"]
+    assert_selector "#many-links_sidebar_section .aat-link-count", count: 3
+  end
+
+  def test_a_count_object_is_called_for_its_count
+    view = Object.new
+    count_of = ->(count) { Sidebars::Section.allocate.count_of(view, Sidebars::Link.new(count: count)) }
+    assert_equal 3, count_of.call(Struct.new(:count).new(3))
+    assert_equal 2, count_of.call([1, 2])
+    assert_equal 4, count_of.call(-> { [1, 2, 3, 4] })
+    assert_equal 5, count_of.call(5)
+    assert_equal "99+", count_of.call("99+")
+    assert_nil count_of.call(nil)
+  end
+
+  def test_an_unknown_group_headings_value_raises
+    error = assert_raises(ArgumentError) { Sidebars.add(Struct.new(:sidebar_sections).new([]), :related_records, nil, {group_headings: :always}, proc { link "A", "/a" }) }
+    assert_match(/group_headings: :always is not one of :auto, true, false/, error.message)
+  end
+
+  def test_groups_do_not_nest
+    collector = Sidebars::Collector.new(nil)
+    error = assert_raises(ArgumentError) { collector.group("A") { collector.group("B") { collector.link("L", "/l") } } }
+    assert_match(/groups do not nest/, error.message)
+    collector.group("A") { collector.link("L", "/l") }
+    collector.link("M", "/m")
+    assert_equal ["A", nil], collector.links.map(&:group)
   end
 
   def test_an_unknown_link_option_raises
