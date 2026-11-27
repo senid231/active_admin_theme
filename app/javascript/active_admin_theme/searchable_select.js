@@ -331,11 +331,24 @@ const closeAfterPick = (select) => {
   select.wrapper.addEventListener("keydown", () => { picked = false }, true)
 }
 
+// Tom Select 2.6.2 keeps its refresh timer (refreshThrottle after a keystroke)
+// when the dropdown closes or the focus leaves; the late refresh reopens the
+// dropdown and takes the focus back. close(false) keeps the typed text.
+const dropStaleRefresh = (select) => {
+  select.on("dropdown_close blur", () => {
+    if (select.control_input.value !== "") return
+    clearTimeout(select.refreshTimeout)
+    select.refreshTimeout = null
+    select.wrapper.classList.remove("searching")
+  })
+}
+
 const build = (el, parents) => {
   if (parents.length) el.dataset.searchableSelectParentValue = stateOf(parents)
   const { settings, lazy } = settingsFor(el, parents)
   const select = new TomSelect(el, settings)
   if (lazy) patchLazy(el, select)
+  dropStaleRefresh(select)
   // Without a search input nothing shows the placeholder; the CSS prints this.
   if (!select.control_input.isConnected && select.settings.placeholder) select.control.dataset.placeholder = select.settings.placeholder
   if (!el.multiple) closeAfterPick(select)
