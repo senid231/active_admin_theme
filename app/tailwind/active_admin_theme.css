@@ -160,6 +160,24 @@
 .data-table :where(tbody > tr.selected) > td {
   background-color: var(--aat-selected-row);
 }
+/* A table_for in a panel scrolls sideways instead of widening the page. */
+.panel-body:has(> .data-table) {
+  overflow-x: auto;
+}
+/* Opt-in sticky first column. Body cells keep the stripe, hover and selected fills above. */
+table.with-sticky-rows :is(td, th):first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  box-shadow: inset -1px 0 0 var(--aat-border);
+}
+:where(table.with-sticky-rows td:first-child) {
+  background-color: var(--aat-surface);
+}
+table.with-sticky-rows thead th:first-child {
+  z-index: 2;
+  background-color: var(--aat-table-header);
+}
 
 /* Panels, sidebar sections, attributes tables and the tab content box sit on the v3 surface,
    apart from the page background. */
@@ -472,9 +490,20 @@ body,
   font-size: var(--aat-font-size);
   line-height: 1.5;
 }
+/* v3's font and smoothing: ActiveAdmin's layout puts `antialiased` on body, which thins text on macOS. */
 body {
   background-color: var(--aat-page-bg);
   color: var(--aat-text);
+  font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+}
+
+/* Disabled and read-only fields look read-only. */
+:is(.formtastic, .filters-form) :is(input:not([type="checkbox"], [type="radio"]), select, textarea):is(:disabled, [readonly]) {
+  background-color: var(--aat-surface-2);
+  color: var(--aat-text-muted);
+  cursor: not-allowed;
 }
 
 /* Links as in v3: the theme colours, no underline on hover. In the base layer, like

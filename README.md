@@ -229,7 +229,7 @@ Every component but the select widget is opt-in: nothing changes for an app that
 
 ### `status_tag`
 
-Tags have a solid fill and white text, as in theme 3, the same in light and dark mode. `ok` (also `yes`, `published`, `complete`) is green, `warning` is amber, `error` is red, `info` is blue, and anything else, such as `no`, is gray. `empty` shows only muted text. For any other value, define a CSS custom property named `--aat-status-<value>` in your CSS. For a one-off color, pass `color:` (a hex, named, `rgb()`, or `hsl()` color; anything else raises `ArgumentError`):
+Tags have a solid fill and white text, as in theme 3, the same in light and dark mode. `ok` (also `published`, `complete`) is green, `yes` and `info` are blue, `warning` is amber, `error` is red, and anything else, such as `no`, is gray. `empty` shows only muted text. For any other value, define a CSS custom property named `--aat-status-<value>` in your CSS. For a one-off color, pass `color:` (a hex, named, `rgb()`, or `hsl()` color; anything else raises `ArgumentError`):
 
 ```ruby
 status_tag "Shipped"                # uses --aat-status-shipped, if you define it
@@ -310,6 +310,21 @@ text_node confirm_dialog_trigger("Merge", "merge")
 ```ruby
 action_item :reject, only: :show do
   confirm_dialog_tag "Reject", title: "Reject order", url: reject_admin_order_path(resource), class: "action-item-button"
+end
+```
+
+### Sticky first column
+
+Add the `with-sticky-rows` class to a wide table, and its first column stays in place while the table scrolls sideways:
+
+```ruby
+index do |table|
+  table.add_class "with-sticky-rows"
+  # columns
+end
+
+table_for orders, class: "with-sticky-rows" do
+  # columns
 end
 ```
 

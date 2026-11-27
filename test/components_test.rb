@@ -27,6 +27,30 @@ class ComponentsTest < Minitest::Test
     assert_equal "rgba(0, 0, 0, 0)", style("[data-status=empty]", "backgroundColor")
   end
 
+  def test_status_tag_yes_is_blue
+    assert_equal "rgb(25, 114, 198)", style("[data-status=yes]", "backgroundColor")
+  end
+
+  def test_table_in_a_panel_scrolls_with_a_sticky_first_column
+    page.current_window.resize_to(420, 900)
+    body = "#sticky-rows .panel-body"
+    assert_equal "auto", style(body, "overflowX")
+    assert_operator page.evaluate_script("document.querySelector(#{body.to_json}).scrollWidth"), :>, 420
+    left = ->(sel) { page.evaluate_script("document.querySelector(#{sel.to_json}).getBoundingClientRect().left") }
+    first = "#sticky-rows tbody tr:nth-child(2) td:first-child"
+    second = "#sticky-rows tbody tr:nth-child(2) td:nth-child(2)"
+    before = left.(first)
+    page.execute_script("document.querySelector(#{body.to_json}).scrollLeft = 300")
+    assert_in_delta before, left.(first), 1
+    assert_operator left.(second), :<, before
+    assert_equal style(second, "backgroundColor"), style(first, "backgroundColor")
+  end
+
+  def test_body_uses_the_v3_font_without_antialiasing
+    assert_match(/\A"Helvetica Neue", Arial/, style("body", "fontFamily"))
+    assert_equal "auto", style("body", "webkitFontSmoothing")
+  end
+
   def test_status_tag_colors_are_the_same_in_dark_mode
     light = [style("[data-status=ok]", "backgroundColor"), style("[data-status=ok]", "color")]
     page.execute_script("document.documentElement.classList.add('dark')")

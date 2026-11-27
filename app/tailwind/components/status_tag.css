@@ -12,11 +12,15 @@
   --aat-status-error: #ce483b;
   --aat-status-info: #3874d2;
   --aat-status-neutral: #707681;
+  --aat-status-yes: #1972c6;
   --aat-status-text: #ffffff;
 }
 
-.status-tag:is([data-status="ok"], [data-status="yes"], [data-status="published"], [data-status="complete"], [data-status="completed"], [data-status="green"]) {
+.status-tag:is([data-status="ok"], [data-status="published"], [data-status="complete"], [data-status="completed"], [data-status="green"]) {
   --aat-status-color: var(--aat-status-ok);
+}
+.status-tag[data-status="yes"] {
+  --aat-status-color: var(--aat-status-yes);
 }
 .status-tag:is([data-status="warning"], [data-status="warn"], [data-status="orange"]) {
   --aat-status-color: var(--aat-status-warning);

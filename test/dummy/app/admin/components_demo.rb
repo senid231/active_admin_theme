@@ -42,6 +42,12 @@ ActiveAdmin.register_page "Components" do
       end
     end
 
+    panel "Sticky rows", id: "sticky-rows" do
+      table_for (1..4).to_a, class: "with-sticky-rows" do
+        (1..10).each { |c| column("Column #{c}") { |r| "row #{r} / a fairly long value #{c}" } }
+      end
+    end
+
     panel "Secret reveal" do
       div(id: "secret") { secret_reveal url: "/admin/components/secret" }
     end

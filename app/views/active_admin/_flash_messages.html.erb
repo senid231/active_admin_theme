@@ -2,17 +2,11 @@
   <div class="aat-flashes">
     <% flash_messages.each do |type, message| %>
       <% if type == "error" %>
-        <div class="aat-flash" data-flash="error" role="alert">
-          <%= message %>
-        </div>
+        <div class="aat-flash" data-flash="error" role="alert"><%= message %></div>
       <% elsif type == "alert" %>
-        <div class="aat-flash" data-flash="alert" role="alert">
-          <%= message %>
-        </div>
+        <div class="aat-flash" data-flash="alert" role="alert"><%= message %></div>
       <% elsif type == "notice" %>
-        <div class="aat-flash" data-flash="notice" role="status">
-          <%= message %>
-        </div>
+        <div class="aat-flash" data-flash="notice" role="status"><%= message %></div>
       <% end %>
     <% end %>
   </div>
