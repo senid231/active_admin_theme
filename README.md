@@ -175,7 +175,7 @@ All colors are CSS custom properties with a light value on `:root` and a dark va
 | `--aat-header-bg`, `--aat-header-text`, `--aat-header-border`, `--aat-menu-*` | Header and top menu |
 | `--aat-titlebar-bg`, `--aat-titlebar-text`, `--aat-titlebar-muted` | Title band: background, page title, breadcrumbs. Dark in both modes. |
 | `--aat-table-header`, `--aat-filter-label` | Index table header; filter and form field labels |
-| `--aat-flash-notice`, `--aat-flash-alert`, `--aat-flash-error`, each with a `-border` variant | Flash band fill and bottom border, the same in both modes |
+| `--aat-flash-notice`, `--aat-flash-alert`, `--aat-flash-warning`, `--aat-flash-error`, each with a `-border` variant | Flash band fill and bottom border, the same in both modes. Warning defaults to the alert colours, as in v3. Any other type is gray (`--aat-flash-other`); give it a colour with `.aat-flash[data-flash="info"] { --aat-flash-color: ...; --aat-flash-border: ...; }`. |
 
 Two more properties set sizes:
 
@@ -525,6 +525,7 @@ The sections of active_admin_page_objects then work on theme pages. Their README
 - `main_menu` is the top menu on desktop and the drawer on a narrow screen, at any depth. `labels`, `has_item?` and `go` take a label path, and `current_labels` returns one. `click` hovers each parent of the top menu; in the drawer it opens the drawer and each collapsed parent first.
 - `ActiveAdminPageObjects::Tabs` drives the theme's `tabs`. Every page has it as `tabs`.
 - `form.field(name)` and `filters.filter(name)` return the searchable select classes for an input rendered `as: :searchable_select`. The theme registers them for that wrapper class with `register_field_class` and `register_filter_class`, so a page object that declares the base gem's `SelectField` or `SelectFilter` for such an input raises `DeclaredClassMismatch`.
+- `flashes` also takes `:warning`. The theme renders every flash type, while ActiveAdmin 4 drops all but `notice`, `alert` and `error`. For another type your app sets, call `ActiveAdminTheme::PageObjects.register_flash_type(:info)` in your spec helper; an unregistered type still raises `ArgumentError`.
 - The header has no user menu, so `user_menu_button` is never found. Pages get `current_user`, `logout_link`, `server_clock`, `main_menu_button` and `sidebar_toggle` instead.
 
 ```ruby

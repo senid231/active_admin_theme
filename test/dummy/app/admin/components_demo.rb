@@ -11,6 +11,12 @@ ActiveAdmin.register_page "Components" do
     head :forbidden
   end
 
+  page_action :warning, method: :get do
+    messages = {warning: "Check the dates\nbefore you export", notice: "Saved"}
+    messages[:info] = "For your information" if params[:extra] == "info"
+    redirect_to admin_components_path, flash: messages
+  end
+
   content do
     # A host defines the color of a custom status in its own CSS.
     text_node "<style>:root { --aat-status-shipped: #7c3aed; }</style>".html_safe

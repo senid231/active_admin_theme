@@ -50,6 +50,10 @@
   --aat-flash-notice-border: #4c7331;
   --aat-flash-alert: #bdbc45;
   --aat-flash-alert-border: #8b8a3d;
+  --aat-flash-other: #707681;
+  --aat-flash-other-border: #5e636c;
+  --aat-flash-warning: var(--aat-flash-alert);
+  --aat-flash-warning-border: var(--aat-flash-alert-border);
   --aat-flash-error: #cd3333;
   --aat-flash-error-border: #962f2f;
   --aat-header-bg: #23282f;

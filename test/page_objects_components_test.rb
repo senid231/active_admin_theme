@@ -29,6 +29,25 @@ class PageObjectsComponentsTest < PageObjectsTestCase
     assert_equal "#b91c1c", tags.last.color
   end
 
+  def test_warning_flash_renders_and_is_found_by_type
+    visit "/admin/components/warning"
+    flashes = Pages::Components.new.flashes
+    assert flashes.has_flash?(:warning, "Check the dates")
+    assert flashes.has_flash?(:notice, "Saved")
+    assert_equal ["Check the dates\nbefore you export"], flashes.messages(:warning)
+    color = page.evaluate_script("getComputedStyle(document.querySelector('.aat-flash[data-flash=warning]')).backgroundColor")
+    assert_equal "rgb(189, 188, 69)", color
+    assert_raises(ArgumentError) { flashes.has_flash?(:unregistered) }
+  end
+
+  def test_unknown_flash_type_renders_gray_and_can_be_registered
+    visit "/admin/components/warning?extra=info"
+    color = page.evaluate_script("getComputedStyle(document.querySelector('.aat-flash[data-flash=info]')).backgroundColor")
+    assert_equal "rgb(112, 118, 129)", color
+    ActiveAdminTheme::PageObjects.register_flash_type(:info)
+    assert Pages::Components.new.flashes.has_flash?(:info, "For your information")
+  end
+
   def test_attributes_table_of_one_record_has_table_roles
     customer_show
     assert_selector ".attributes-table > table[role=table] tr[role=row][data-row=name] > th[role=rowheader] + td[role=cell]"

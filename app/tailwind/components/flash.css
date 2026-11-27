@@ -1,4 +1,5 @@
-/* Flash messages as in theme 3.x: solid full-width bands right under the title band. */
+/* Flash messages as in theme 3.x: solid full-width bands right under the title band.
+   Every flash type renders; a type without a rule below is gray. */
 #page-header:has(+ .aat-flashes) {
   margin-bottom: 0;
 }
@@ -12,8 +13,8 @@
 }
 .aat-flash {
   padding: 13px 0.625rem 11px;
-  border-bottom: 2px solid var(--aat-flash-border);
-  background-color: var(--aat-flash-color);
+  border-bottom: 2px solid var(--aat-flash-border, var(--aat-flash-other-border));
+  background-color: var(--aat-flash-color, var(--aat-flash-other));
   color: #ffffff;
   font-size: 1.1em;
   font-weight: 700;
@@ -32,6 +33,10 @@
 .aat-flash[data-flash="alert"] {
   --aat-flash-color: var(--aat-flash-alert);
   --aat-flash-border: var(--aat-flash-alert-border);
+}
+.aat-flash[data-flash="warning"] {
+  --aat-flash-color: var(--aat-flash-warning);
+  --aat-flash-border: var(--aat-flash-warning-border);
 }
 .aat-flash[data-flash="error"] {
   --aat-flash-color: var(--aat-flash-error);

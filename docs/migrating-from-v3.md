@@ -77,7 +77,7 @@ Extensions that depend on ActiveAdmin 3 internals (calendar, table footer, and o
 ## Tests that read the page
 
 - Status tags are uppercase through CSS, as in theme 3. A browser driver reads `PENDING` where the HTML says `Pending`, so compare status tag text ignoring case. The theme's `StatusTag` page object and the base gem's `have_cell` and `have_row` already do.
-- Flash messages and page links come from the theme's own partials. Select them by `.aat-flash[data-flash="notice"]` (or `alert`, `error`) and `a.aat-page-next`, not by ActiveAdmin's utility classes. The theme's page objects already do.
+- Flash messages and page links come from the theme's own partials. Select them by `.aat-flash[data-flash="notice"]` (or `alert`, `warning`, `error`; v3 apps that set `flash[:warning]` keep seeing it) and `a.aat-page-next`, not by ActiveAdmin's utility classes. The theme's page objects already do.
 
 ## Not ported
 

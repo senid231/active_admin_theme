@@ -18,6 +18,7 @@ ActiveAdminPageObjects.register_selectors(
   flash: ".aat-flash",
   flash_notice: ".aat-flash[data-flash='notice']",
   flash_alert: ".aat-flash[data-flash='alert']",
+  flash_warning: ".aat-flash[data-flash='warning']",
   flash_error: ".aat-flash[data-flash='error']",
   pagination_current: "a[aria-current='page']",
   pagination_next: "a.aat-page-next",
