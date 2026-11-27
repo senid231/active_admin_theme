@@ -127,6 +127,17 @@ class LayoutTest < Minitest::Test
     assert_selector "#site-header a.aat-logout"
   end
 
+  def test_footer_shows_the_product_version_and_extra
+    visit "/admin/customers"
+    assert_selector "[data-aat-footer] [data-aat-footer-product]", text: "Theme Demo 1.2.3"
+    assert_selector "[data-aat-footer] a[href='/admin']", text: "Changelog"
+  end
+
+  def test_site_title_links_to_the_admin_root
+    visit "/admin/customers"
+    assert_selector "h1[data-test-site-title] a[href='/admin']", text: "ActiveAdmin Theme Demo"
+  end
+
   def test_action_items_are_buttons
     visit "/admin/customers"
     background = page.evaluate_script("getComputedStyle(document.querySelector('[data-test-action-items] a')).backgroundColor")

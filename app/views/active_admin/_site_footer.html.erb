@@ -1,0 +1,15 @@
+<% product = [ActiveAdminTheme.footer_product_name, ActiveAdminTheme.footer_version].compact_blank.join(" ") %>
+<% extra = active_admin_theme_footer_extra %>
+<div data-aat-footer>
+  <% if product.present? || extra.present? %>
+    <% if product.present? %><span data-aat-footer-product><%= product %></span><% end %>
+    <% if product.present? && extra.present? %><span aria-hidden="true">&middot;</span><% end %>
+    <% if extra.present? %><span data-aat-footer-extra><%= extra %></span><% end %>
+  <% else %>
+    <%= I18n.t(
+          "active_admin.powered_by",
+          active_admin: link_to("Active Admin", "https://activeadmin.info", class: "text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-gray-400 no-underline"),
+          version: ActiveAdmin::VERSION
+        ).html_safe %>
+  <% end %>
+</div>

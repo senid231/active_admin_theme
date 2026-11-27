@@ -570,14 +570,22 @@ body {
   justify-content: flex-start;
 }
 
-/* The site footer: the element after the page content. ActiveAdmin's partial has no hook of its own. */
-[data-aat-page] + :where(div) {
-  margin: 1.5rem 0 0;
-  padding: 0.75rem 0.625rem 1.5rem;
-  font-size: 0.8em;
-  text-align: start;
-  color: var(--aat-text-muted);
-  border: 0;
+/* The site footer (_site_footer.html.erb). In a layer, so a host's utility classes win. */
+@layer components {
+  [data-aat-footer] {
+    margin: 1.5rem 0 0;
+    padding: 0.75rem 0.625rem 1.5rem;
+    font-size: 0.8em;
+    text-align: start;
+    color: var(--aat-text-muted);
+    border: 0;
+  }
+
+  @media (width >= 48rem) {
+    [data-aat-footer] {
+      padding-inline: 1rem;
+    }
+  }
 }
 
 /* Menus of any depth. In the top menu each submenu flies out beside its
@@ -621,8 +629,7 @@ body {
 
 @media (width >= 48rem) {
   #site-header,
-  #page-header,
-  [data-aat-page] + :where(div) {
+  #page-header {
     padding-inline: 1rem;
   }
 

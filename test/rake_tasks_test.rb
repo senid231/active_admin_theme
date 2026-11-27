@@ -6,8 +6,10 @@ require "minitest/autorun"
 require "rake"
 
 class RakeTasksTest < Minitest::Test
-  def test_the_css_task_runs_once_per_call
+  # One test: a second load_tasks in this process would define each task again.
+  def test_each_task_runs_once_per_call
     Rails.application.load_tasks
     assert_equal 1, Rake::Task["active_admin_theme:css"].actions.size
+    assert_equal 1, Rake::Task["active_admin_theme:tailwind:sources"].actions.size
   end
 end

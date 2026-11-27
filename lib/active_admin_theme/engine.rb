@@ -4,6 +4,14 @@ module ActiveAdminTheme
     # and #9150 get full copies of the views that render those hooks.
     paths["app/views"] << "app/views_compat" unless ActiveAdminTheme.layout_hooks?
 
+    # Logical paths a Sprockets host must precompile for the theme's modules and
+    # the vendored libraries they import (Propshaft hosts need no list).
+    def self.sprockets_precompile
+      theme = Dir[root.join("app/javascript/active_admin_theme/*.js")].map { |file| "active_admin_theme/#{File.basename(file)}" }
+      vendored = Dir[root.join("vendor/javascript/*.js")].map { |file| File.basename(file) }
+      (theme + vendored).sort
+    end
+
     # ActiveAdmin keeps its own importmap (ActiveAdmin.importmap) and renders
     # it in the layout, so the theme's modules are pinned there. A host with no
     # importmap-rails has no such config; it imports the npm package instead.
@@ -14,6 +22,8 @@ module ActiveAdminTheme
       if app.config.respond_to?(:assets)
         app.config.assets.paths << root.join("app/javascript")
         app.config.assets.paths << root.join("vendor/javascript")
+        # Propshaft also has config.assets.precompile, so test for the gem.
+        app.config.assets.precompile += self.class.sprockets_precompile if defined?(::Sprockets::Railtie)
       end
 
       if ActiveAdmin.application.respond_to?(:importmap_watches)
