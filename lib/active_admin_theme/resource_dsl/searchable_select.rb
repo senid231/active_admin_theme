@@ -57,6 +57,20 @@ module ActiveAdminTheme
         }
       end
 
+      # A dependent select passes on its parent's value, and that may be the
+      # None marker of active_admin_filter_extensions: it searches `_null` here
+      # as it does on the index.
+      def none_option_filters(filters)
+        return filters unless defined?(ActiveAdminFilterExtensions::NoneOption)
+
+        filters = filters.respond_to?(:to_unsafe_h) ? filters.to_unsafe_h : filters.to_h
+        marker = ActiveAdminFilterExtensions.none_value
+        keys = filters.filter_map do |key, value|
+          key.to_s if key.to_s.match?(ActiveAdminFilterExtensions::NoneOption::KEY) && Array.wrap(value).include?(marker)
+        end
+        keys.empty? ? filters : ActiveAdminFilterExtensions::NoneOption.search_params(filters, keys, marker)
+      end
+
       # Runs inside the resource controller's collection action.
       def page(controller, source)
         params = controller.params
@@ -69,7 +83,7 @@ module ActiveAdminTheme
         scope = scope.all
         klass = scope.klass
         filters = params[:q].respond_to?(:to_unsafe_h) ? params[:q] : {}
-        scope = scope.ransack(filters, auth_object: authorization).result
+        scope = scope.ransack(none_option_filters(filters), auth_object: authorization).result
 
         scope = apply_search(controller, scope, klass, source, term, authorization) if term.present?
         scope = apply_order(controller, scope, klass, source)

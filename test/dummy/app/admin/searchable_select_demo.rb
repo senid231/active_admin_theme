@@ -22,6 +22,23 @@ ActiveAdmin.register City do
   searchable_select_options :capitals, scope: -> { City.where(id: City.group(:country_id).select("MIN(cities.id)")) }, order: :name
 end
 
+# Searches the country filter inside an OR grouping, as a filter plugin's
+# "None" option does, so the search object no longer reports the values.
+ActiveAdmin.register City, as: "GroupedCity" do
+  menu false
+  filter :country, as: :searchable_select, min_chars: 0, multiple: true
+
+  controller do
+    def apply_filtering(chain)
+      q = params.fetch(:q, {}).permit(country_id_in: []).to_h
+      ids = q.delete("country_id_in")
+      q["g"] = [{"m" => "or", "country_id_in" => ids, "country_id_null" => "1"}] if ids.present?
+      @search = chain.ransack(q)
+      @search.result
+    end
+  end
+end
+
 ActiveAdmin.register Order do
   menu parent: "Demo pages", priority: 6
   permit_params :reference, :status, :customer_id, :country_id, :city_id

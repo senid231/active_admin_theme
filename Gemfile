@@ -27,4 +27,6 @@ group :development, :test do
   # Drives the dummy app in the tests of active_admin_theme/page_objects. Not on
   # RubyGems yet, so pinned to a commit.
   gem 'active_admin_page_objects', github: 'activeadmin-plugins/active_admin_page_objects', ref: '8ec1677d4118559af117421fbf6576cdd5e33721'
+  # Tests the searchable select with its None filter option. Pinned until the option is released.
+  gem 'active_admin_filter_extensions', github: 'activeadmin-plugins/active_admin_filter_extensions', ref: '31d4797a30a5e964f6eb0e15fe52f8e6097d7093'
 end

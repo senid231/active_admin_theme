@@ -505,6 +505,8 @@ f.input :city, as: :searchable_select, load_all: true, depends_on: %i[country_id
 f.input :street, as: :searchable_select, load_all: true, depends_on: :city_id, depends_optional: true
 ```
 
+With [active_admin_filter_extensions](https://github.com/activeadmin-plugins/active_admin_filter_extensions), a parent filter can offer a "None" option (`extensions: { none: true }`). The `searchable_select_options` endpoint reads its marker as that gem's index does: the child lists the records whose parent is empty, or those plus the records of the other values picked. A searchable multi-select filter keeps the values picked beside "None" after the search.
+
 **The endpoint.** Declare it in the resource that holds the options:
 
 ```ruby

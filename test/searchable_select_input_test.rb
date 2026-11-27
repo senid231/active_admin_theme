@@ -52,6 +52,14 @@ class SearchableSelectInputTest < Minitest::Test
     end
   end
 
+  def test_values_searched_inside_a_grouping_stay_selected
+    countries = Country.order(:id).first(2)
+    query = countries.map { |country| "q[country_id_in][]=#{country.id}" }.join("&")
+    html = page("/admin/grouped_cities?#{query}")
+    selected = options(html, "q[country_id_in][]")
+    countries.each { |country| assert_includes selected, [country.name, country.id.to_s] }
+  end
+
   def test_dependent_options_render_as_data_attributes
     html = page("/admin/dependent_lab")
     data = ->(name, key) { html.at_css("select[name='#{name}']")["data-searchable-select-#{key}"] }

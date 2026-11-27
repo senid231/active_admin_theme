@@ -27,7 +27,7 @@ module ActiveAdminTheme
           raise ArgumentError, "searchable_select input :#{method} cannot find the selected record of searchable_select_options :#{source[:name]}: value: must be an attribute, not a lambda"
         end
 
-        values = Array(object.public_send(input_name)).flatten.compact_blank if object && klass
+        values = searchable_select_selected_values if object && klass
         return [] if values.blank?
 
         label = options[:member_label] || source&.dig(:label)
@@ -45,6 +45,17 @@ module ActiveAdminTheme
       end
 
       private
+
+      # A filter whose values a plugin moved into a Ransack grouping (an OR with
+      # `_null`, for one) reads them back from the request instead.
+      def searchable_select_selected_values
+        values = Array(object.public_send(input_name)).flatten.compact_blank
+        if values.empty? && object.is_a?(::Ransack::Search)
+          values = Array(template.params.dig(:q, input_name)).flatten.compact_blank
+        end
+        none = ActiveAdminFilterExtensions.none_value if defined?(ActiveAdminFilterExtensions) && ActiveAdminFilterExtensions.respond_to?(:none_value)
+        none ? values - [none] : values
+      end
 
       def searchable_select_data
         data = {searchable_select: true, searchable_select_url: searchable_select_url}
