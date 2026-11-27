@@ -40,6 +40,9 @@ ActiveRecord::Schema.define do
     t.string :kind
     t.references :shipment
   end
+  create_table :network_codes, primary_key: %i[mcc mnc] do |t|
+    t.string :mcc, :mnc, :name
+  end
   create_table :orders do |t|
     t.string :reference, :status
     t.references :customer, :country, :city
@@ -61,6 +64,7 @@ end
 
 # 70 countries and 3 cities each: enough rows for the searchable select to page.
 # The last country has markup in its name to check that labels are escaped.
+[%w[262 01 Telekom], %w[262 02 Vodafone], %w[310 260 T-Mobile]].each { |mcc, mnc, name| NetworkCode.create!(mcc: mcc, mnc: mnc, name: name) }
 country_records = Array.new(70) { |i| Country.create!(name: format("Country %02d", i + 1)) }
 country_records << Country.create!(name: %(<i>Italic</i> & "Quoted"))
 country_records.each do |country|

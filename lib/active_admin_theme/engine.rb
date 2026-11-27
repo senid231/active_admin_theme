@@ -51,6 +51,7 @@ module ActiveAdminTheme
     # loads before or after this initializer.
     initializer "active_admin_theme.resource_dsl" do
       require "active_admin_theme/resource_dsl/searchable_select"
+      require "active_admin_theme/resource_dsl/link_sidebars"
     end
 
     initializer "active_admin_theme.config_helper" do

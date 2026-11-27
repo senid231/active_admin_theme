@@ -74,6 +74,69 @@ class SearchableSelectOptionsTest < Minitest::Test
 
   def test_unknown_options_raise
     error = assert_raises(ArgumentError) { ActiveAdminTheme::SearchableSelect.source(:all, item_title: :name) }
-    assert_match(/unknown option :item_title/, error.message)
+    assert_match(/unknown option :item_title, known options are :scope, :label/, error.message)
+    assert_match(/:id_search/, error.message)
+  end
+
+  def names(path, params)
+    get(path, params)["results"].map { |result| result["text"] }
+  end
+
+  def test_id_search_finds_the_record_with_that_id_and_skips_the_text_search
+    assert_equal ["Customer 3"], names("/admin/customers/by_id_options", term: "id:3")
+    assert_equal ["Customer 3"], names("/admin/customers/by_id_options", term: " ID: 3 ")
+    assert_equal ["Customer 3", "Customer 30"], names("/admin/customers/by_id_options", term: "Customer 3").sort
+  end
+
+  def test_id_search_stays_inside_the_scope_and_the_filters
+    assert_empty names("/admin/customers/by_id_options", term: "id:4")
+    assert_empty names("/admin/customers/by_id_options", term: "id:3", q: {status_eq: "active"})
+    assert_equal ["Customer 3"], names("/admin/customers/by_id_options", term: "id:3", q: {status_eq: "suspended"})
+  end
+
+  def test_id_search_takes_another_prefix_and_the_value_column
+    reply = get("/admin/customers/by_email_options", term: "#customer3@example.com")
+    assert_equal [{"id" => "customer3@example.com", "text" => "Customer 3"}], reply["results"]
+  end
+
+  def test_a_term_that_is_not_an_id_is_a_text_search
+    assert_empty names("/admin/customers/by_id_options", term: "id:abc")
+    assert_empty names("/admin/customers/by_id_options", term: "id:")
+    assert_equal ["Customer 17"], names("/admin/customers/by_id_options", term: "omer 17")
+  end
+
+  def test_id_search_is_off_unless_asked_for
+    assert_empty names("/admin/customers/all_options", term: "id:3")
+  end
+
+  def test_id_search_must_be_true_false_or_a_prefix
+    assert_nil ActiveAdminTheme::SearchableSelect.source(:all, id_search: false)[:id_prefix]
+    assert_equal "id:", ActiveAdminTheme::SearchableSelect.source(:all, id_search: true)[:id_prefix]
+    assert_equal "#", ActiveAdminTheme::SearchableSelect.source(:all, id_search: "#")[:id_prefix]
+    [5, " "].each do |value|
+      error = assert_raises(ArgumentError) { ActiveAdminTheme::SearchableSelect.source(:all, id_search: value) }
+      assert_match(/id_search:/, error.message)
+    end
+  end
+
+  def test_the_global_per_page_applies_when_the_declaration_has_none
+    ActiveAdminTheme.searchable_select_per_page = 30
+    assert_equal 30, get("/admin/products/all_options")["results"].size
+    assert_equal 20, get("/admin/products/sku_options")["results"].size
+    assert_equal 7, get("/admin/products/all_options", per_page: 7)["results"].size
+  ensure
+    ActiveAdminTheme.searchable_select_per_page = nil
+  end
+
+  def test_a_composite_primary_key_orders_by_each_column
+    reply = get("/admin/network_codes/all_options")
+    assert_equal %w[T-Mobile Vodafone Telekom], reply["results"].map { |result| result["text"] }
+  end
+
+  def test_id_search_on_a_composite_key_is_a_text_search
+    reply = get("/admin/network_codes/by_key_options", term: "id:Voda")
+    assert_equal [], reply["results"]
+    reply = get("/admin/network_codes/by_key_options", term: "Voda")
+    assert_equal ["Vodafone"], reply["results"].map { |result| result["text"] }
   end
 end

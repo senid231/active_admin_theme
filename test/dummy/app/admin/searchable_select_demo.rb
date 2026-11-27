@@ -39,6 +39,12 @@ ActiveAdmin.register City, as: "GroupedCity" do
   end
 end
 
+ActiveAdmin.register NetworkCode do
+  menu false
+  searchable_select_options value: :mnc, label: :name
+  searchable_select_options :by_key, value: :code, label: :name, id_search: true
+end
+
 ActiveAdmin.register Order do
   menu parent: "Demo pages", priority: 6
   permit_params :reference, :status, :customer_id, :country_id, :city_id

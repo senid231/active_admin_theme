@@ -33,13 +33,16 @@ module ActiveAdminTheme
 
     DEFAULT_PER_PAGE = 50
     MAX_PER_PAGE = 500
-    OPTIONS = %i[scope label search allow_empty_search value order per_page additional_payload].freeze
+    DEFAULT_ID_PREFIX = "id:".freeze
+    OPTIONS = %i[scope label search allow_empty_search value order per_page additional_payload id_search].freeze
     ALIASES = %i[display_text text_attribute filter apply_search].freeze
 
     class << self
       def source(name, options)
         unknown = options.keys - OPTIONS - ALIASES
-        raise ArgumentError, "searchable_select_options: unknown option #{unknown.map(&:inspect).join(", ")}" if unknown.any?
+        if unknown.any?
+          raise ArgumentError, "searchable_select_options: unknown option #{unknown.map(&:inspect).join(", ")}, known options are #{(OPTIONS + ALIASES).map(&:inspect).join(", ")}"
+        end
 
         attribute = options[:text_attribute]
         filter = options[:filter]
@@ -52,7 +55,8 @@ module ActiveAdminTheme
           allow_empty_search: options.fetch(:allow_empty_search, true),
           value: options[:value] || :id,
           order: options[:order],
-          per_page: options[:per_page] || DEFAULT_PER_PAGE,
+          per_page: options[:per_page],
+          id_prefix: id_prefix(options[:id_search]),
           additional_payload: options[:additional_payload]
         }
       end
@@ -85,7 +89,10 @@ module ActiveAdminTheme
         filters = params[:q].respond_to?(:to_unsafe_h) ? params[:q] : {}
         scope = scope.ransack(none_option_filters(filters), auth_object: authorization).result
 
-        scope = apply_search(controller, scope, klass, source, term, authorization) if term.present?
+        if term.present?
+          id = id_term(klass, source, term)
+          scope = id ? scope.where(id_column(klass, source) => id) : apply_search(controller, scope, klass, source, term, authorization)
+        end
         scope = apply_order(controller, scope, klass, source)
 
         per_page = per_page(source, params)
@@ -132,9 +139,45 @@ module ActiveAdminTheme
         scope.arity.zero? ? controller.instance_exec(&scope) : controller.instance_exec(params, &scope)
       end
 
+      def id_prefix(id_search)
+        case id_search
+        when nil, false then nil
+        when true then DEFAULT_ID_PREFIX
+        when String
+          raise ArgumentError, "searchable_select_options: id_search: must not be an empty String" if id_search.strip.empty?
+
+          id_search.strip
+        else
+          raise ArgumentError, "searchable_select_options: id_search: must be true, false or a String prefix, not #{id_search.inspect}"
+        end
+      end
+
+      # The exact id the term asks for (`id:123`), or nil for a text search. An
+      # integer column takes digits only, so `#abc` stays a text search.
+      def id_term(klass, source, term)
+        prefix = source[:id_prefix]
+        return unless prefix && term.downcase.start_with?(prefix.downcase)
+
+        id = term[prefix.length..].strip
+        return if id.empty?
+        column = id_column(klass, source)
+        # One term cannot name a composite key; search it as text.
+        return if column.is_a?(Array)
+        return if klass.type_for_attribute(column).type == :integer && !id.match?(/\A\d+\z/)
+
+        id
+      end
+
+      # The `value:` attribute when it is a column, else the primary key.
+      def id_column(klass, source)
+        value = source[:value].to_s
+        klass.column_names.include?(value) ? value : klass.primary_key
+      end
+
       def per_page(source, params)
+        default = source[:per_page] || ActiveAdminTheme.searchable_select_per_page || DEFAULT_PER_PAGE
         requested = params[:per_page].to_i
-        requested.positive? ? [requested, [source[:per_page], MAX_PER_PAGE].max].min : source[:per_page]
+        requested.positive? ? [requested, [default, MAX_PER_PAGE].max].min : default
       end
 
       def label_methods
@@ -174,7 +217,8 @@ module ActiveAdminTheme
         order = source[:order]
         return controller.instance_exec(scope, &order) if order.respond_to?(:call)
 
-        scope.reorder(order || {klass.primary_key => :desc})
+        # A composite primary key is an Array of columns.
+        scope.reorder(order || Array(klass.primary_key).to_h { |column| [column, :desc] })
       end
     end
   end

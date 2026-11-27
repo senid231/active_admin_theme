@@ -10,6 +10,10 @@ ActiveAdmin.register Customer do
     render json: {value: "token-#{resource.id}"}
   end
 
+  # Exact-id search: "id:3", or "#customer3@example.com" by the email value.
+  searchable_select_options :by_id, scope: -> { Customer.where.not(status: "closed") }, label: :name, search: :name_cont, id_search: true
+  searchable_select_options :by_email, value: :email, label: :name, search: :name_cont, id_search: "#"
+
   filter :name
   filter :email
   filter :country
@@ -32,6 +36,22 @@ ActiveAdmin.register Customer do
 
   sidebar "Help", only: :show do
     para "Sidebar content shows inside a panel."
+  end
+
+  related_records_sidebar priority: 20 do |customer|
+    link "Orders", admin_orders_path(q: {customer_id_eq: customer.id}),
+      count: -> { Order.where(customer_id: customer.id).count }, if: -> { authorized?(:read, Order) }
+    link "Paid orders", admin_orders_path(q: {customer_id_eq: customer.id, status_eq: "paid"}), if: -> { customer.status == "active" }
+  end
+
+  external_links_sidebar priority: 30 do |customer|
+    link "Billing", "https://billing.example/customers/#{customer.id}"
+    link "Mail", "https://mail.example/search?q=#{CGI.escape(customer.email)}"
+  end
+
+  # No link shows for a customer that is not closed, so the sidebar is left out.
+  external_links_sidebar title: "Closed accounts", priority: 40 do |customer|
+    link "Archive", "https://archive.example/customers/#{customer.id}", if: -> { customer.status == "closed" }
   end
 
   show do

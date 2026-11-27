@@ -18,6 +18,7 @@
 @import "./components/pagination.css";
 @import "./components/flash.css";
 @import "./components/notice.css";
+@import "./components/link_list.css";
 
 /*
  * ActiveAdmin releases with the layout hooks (activeadmin/activeadmin#9149 to

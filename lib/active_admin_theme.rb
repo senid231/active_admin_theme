@@ -30,6 +30,8 @@ module ActiveAdminTheme
   ].freeze
 
   class << self
+    # Page size of a searchable_select_options endpoint that declares no per_page:. Nil means 50.
+    attr_accessor :searchable_select_per_page
 
     attr_writer :javascripts, :searchable_select_all, :searchable_select_min_chars
     # nil keeps ActiveAdmin's "Powered by" footer; any of the three replaces it.

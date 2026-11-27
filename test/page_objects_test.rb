@@ -178,7 +178,7 @@ class PageObjectsTest < PageObjectsTestCase
   def test_sidebar_sections_are_panels
     show = Pages::CustomerShow.new
     show.load(id: 2)
-    assert_equal ["Help"], show.sidebar.titles
+    assert_equal ["Help", "Related records", "External links"], show.sidebar.titles
     assert_equal "Sidebar content shows inside a panel.", show.sidebar.panel("Help").body.text
     assert show.sidebar.has_no_panel?("Filters")
 
