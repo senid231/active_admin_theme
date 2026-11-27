@@ -24,6 +24,7 @@ group :development, :test do
   gem 'puma'
   gem 'capybara'
   gem 'cuprite'
+  gem 'rspec-expectations'
   # Drives the dummy app in the tests of active_admin_theme/page_objects. Not on
   # RubyGems yet, so pinned to a commit.
   gem 'active_admin_page_objects', github: 'activeadmin-plugins/active_admin_page_objects', ref: '8ec1677d4118559af117421fbf6576cdd5e33721'

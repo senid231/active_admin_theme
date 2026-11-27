@@ -25,7 +25,7 @@ class PageObjectsComponentsTest < PageObjectsTestCase
     components = Pages::Components.new
     components.load
     tags = Theme::StatusTag.all_in(components.panel("Status tags").body)
-    assert_equal %w[ok warning error info empty yes shipped unstyled green orange red blue no late], tags.map(&:kind)
+    assert_equal %w[ok warning error danger info empty yes shipped unstyled green orange red blue no late], tags.map(&:kind)
     assert_equal "#b91c1c", tags.last.color
   end
 
@@ -135,6 +135,52 @@ class PageObjectsComponentsTest < PageObjectsTestCase
     secret.hide
     refute secret.revealed?
     assert_equal secret.mask, secret.text
+  end
+
+  def test_secret_of_an_attributes_table_row
+    table = customer_show.attributes_table
+    secret = table.secret(:token)
+    assert_kind_of Theme::SecretReveal, secret
+    assert table.has_secret_mask?(:token)
+    assert table.has_secret_mask?(:token, "••••••••")
+    refute table.has_secret_mask?(:token, "***", wait: 0)
+    refute table.has_secret_value?(:token, "token-2", wait: 0)
+    assert table.has_no_secret_value?(:token, "token-2", wait: 0)
+    assert secret.has_secret_mask?
+    refute secret.has_secret_value?("token-2", wait: 0)
+
+    secret.reveal
+    assert table.has_secret_value?(:token, "token-2")
+    assert table.has_no_secret_mask?(:token, wait: 0)
+    refute table.has_secret_mask?(:token, wait: 0)
+    refute table.has_secret_value?(:token, "other", wait: 0)
+    assert table.has_no_secret_value?(:token, "other", wait: 0)
+    assert secret.has_secret_value?("token-2")
+    assert secret.has_no_secret_mask?
+
+    secret.hide
+    assert table.has_secret_mask?(:token)
+    refute table.has_secret_mask?(:name, wait: false)
+    refute table.has_secret_value?(:name, "Customer 2", wait: false)
+  end
+
+  def test_rspec_matchers_for_secrets
+    begin
+      require "active_admin_theme/page_objects/rspec"
+    rescue LoadError
+      skip "rspec-expectations is not in the bundle"
+    end
+    matchers = Object.new.extend(ActiveAdminTheme::PageObjects::RSpec::Matchers)
+    table = customer_show.attributes_table
+    assert matchers.have_secret_mask(:token).matches?(table)
+    refute matchers.have_secret_value(:token, "token-2", wait: 0).matches?(table)
+    assert matchers.have_secret_value(:token, "token-2", wait: 0).does_not_match?(table)
+
+    table.secret(:token).reveal
+    assert matchers.have_secret_value(:token, "token-2").matches?(table)
+    assert matchers.have_secret_value("token-2").matches?(table.secret(:token))
+    assert matchers.have_secret_mask(:token, wait: 0).does_not_match?(table)
+    refute matchers.have_secret_mask(wait: 0).matches?(table.secret(:token))
   end
 
   def test_secret_reveal_reports_a_failed_request
