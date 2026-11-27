@@ -68,7 +68,7 @@ ActiveAdmin 4 dropped menus deeper than one submenu level, but the theme keeps t
 | `tabs` / `tab` | Restored by the theme. |
 | `panel` around `sidebar` and show `attributes_table` | Restored by the theme. |
 | `Panel#header_action` | Removed. |
-| `dropdown_menu` in action items | Removed by ActiveAdmin 4. |
+| `dropdown_menu` in action items | Restored by the theme as `dropdown_menu_tag`, because an `action_item` block returns a string. `dropdown_menu` works in page bodies. |
 | `index_as_blog`, `index_as_block`, `index_as_grid`, `index_column` | Removed by ActiveAdmin 4. |
 | Sortable has-many forms | Removed by ActiveAdmin 4. |
 

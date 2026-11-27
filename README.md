@@ -102,6 +102,8 @@ ActiveAdmin pages import the modules listed in `ActiveAdminTheme.javascripts`. W
 %w[
   active_admin_theme/layout
   active_admin_theme/server_clock
+  active_admin_theme/tabs
+  active_admin_theme/dropdown_menu
   active_admin_theme/table_crisscross
   active_admin_theme/searchable_select
 ]
@@ -169,6 +171,7 @@ All colors are CSS custom properties with a light value on `:root` and a dark va
 | --- | --- |
 | `--aat-page-bg`, `--aat-surface`, `--aat-surface-2`, `--aat-surface-hover`, `--aat-selected-row` | Page; panels, attributes tables and the tab content box; table headers, hover, selected rows |
 | `--aat-text`, `--aat-text-muted`, `--aat-border` | Text and borders |
+| `--aat-text-warning`, `--aat-text-danger` | Warning and danger text, such as an error message or a warning label. Readable (4.5:1 or better) on the page and panel surfaces in both modes. Use as `text-(--aat-text-danger)`. The `--aat-status-*` and `--aat-flash-*` colours are fills and are too light as text on the dark surface. |
 | `--aat-input-bg`, `--aat-input-border` | Form controls |
 | `--aat-accent`, `--aat-link`, `--aat-delete-link` | Accent, links, and delete links |
 | `--aat-button`, `--aat-button-hover`, `--aat-button-text` | Buttons and action items. Every action item is a filled button. |
@@ -218,6 +221,8 @@ end
 ```
 
 Tabs use Flowbite's tabs, which ActiveAdmin already loads. A tab's panel id is its parameterized title unless `id:` sets it. A title already used on the page gets `-2`, `-3` and so on, and an id that does not start with a letter gets a `tab-` prefix.
+
+A URL hash opens a tab, on page load and when the hash changes. `#history` opens the tab whose panel id is `history`. A hash that names an element inside a hidden tab opens that tab, and every tab around it, and scrolls to the element. Clicking a tab writes its panel id to the hash without adding a history entry. The `active_admin_theme/tabs` script does this. It is in the default list.
 
 ### `panel`
 
@@ -277,6 +282,14 @@ A masked value with an eye icon before it. A click fetches and shows the value, 
 secret_reveal url: secret_admin_account_path(account), mask: "••••••••"
 ```
 
+With `value:` instead of `url:`, the value is in the page, in a `<template>`, and a click shows it with no request. It is always shown as text, and may span lines. A blank value shows "Empty". `url:` and `value:` are exclusive.
+
+```ruby
+secret_reveal value: account.token
+```
+
+Prefer `url:` for credentials. An inline value is in the page HTML, while an endpoint can authorize and log each reveal.
+
 ### `confirm_dialog`
 
 A confirmation dialog with optional form fields, built on the Flowbite modal that ActiveAdmin uses for batch actions. It submits a real form with the CSRF token. Needs the `active_admin_theme/confirm_dialog` script for focus handling and field validation. Do not place it inside another form.
@@ -293,8 +306,11 @@ confirm_dialog "Reject", title: "Reject order", message: "The buyer is notified.
 
 The dialog has a title bar. Its buttons sit at the left, the confirm button first, then Cancel.
 
-Field types are `:string`, `:text`, `:select`, and `:boolean`. More options:
+Field types are `:string`, `:text`, `:number`, `:date`, `:select`, and `:boolean`. More options:
 
+- `scope:` nests every field name, so `reason` becomes `reject[reason]`, and `meta[source]` becomes `reject[meta][source]`.
+- A select field takes `multiple: true`. It sends `name[]`, and `value:` is an array of the selected values.
+- A field takes `input_html:`, attributes for its control, such as `{min: 0, step: "0.01"}` or `{maxlength: 20}`. The attributes the component sets, such as `name` and `id`, win, and `class` is joined.
 - `params:` adds hidden fields. Nested hashes and arrays become Rails' bracketed names.
 - `class:` adds classes to the button, and `trigger_html:` other attributes. Inside the action items the button looks like the other action items.
 - `trigger: false` renders the dialog without a button. It needs `id:`. Any element with `data-modal-target` and `data-modal-show` set to that id opens it; `confirm_dialog_trigger(text, id, **html_options)` renders such a button.
@@ -310,6 +326,48 @@ text_node confirm_dialog_trigger("Merge", "merge")
 ```ruby
 action_item :reject, only: :show do
   confirm_dialog_tag "Reject", title: "Reject order", url: reject_admin_order_path(resource), class: "action-item-button"
+end
+```
+
+When a dialog opens, the script sends a bubbling `aat:confirm-dialog:open` event on it, with `detail: {dialog, trigger}`. The event goes out before the focus moves, so a listener can fill or add fields:
+
+```js
+document.addEventListener("aat:confirm-dialog:open", ({detail: {dialog, trigger}}) => {
+  dialog.querySelector("[name=reason]").value = trigger.dataset.reason
+})
+```
+
+### `lazy_load`
+
+`lazy_load url: path` is a placeholder that fetches an HTML fragment when it scrolls into view (a hidden tab loads when opened) and replaces its content with it. Needs the opt-in `active_admin_theme/lazy_load` script.
+
+```ruby
+lazy_load url: admin_account_history_path(account)
+lazy_load url: report_path, loading: "Building the report...", error: "No report", eager: true
+```
+
+- `loading:` is the text shown until the reply comes, and `error:` the text shown when the request fails.
+- `method:` is the request verb, `get` by default.
+- `eager: true` loads at once, without waiting for the placeholder to scroll into view.
+
+The endpoint renders the fragment without the layout, for example `render partial: "history", layout: false`. A `<script>` in the reply does not run. The element sends a bubbling `aat:lazy-load:loaded` event after each load, so an app can set up its own widgets, and it reloads on `aat:lazy-load:reload`.
+
+### `dropdown_menu`
+
+A button that opens a list of links, as ActiveAdmin 3's `dropdown_menu` did. It is a Flowbite dropdown. The default `active_admin_theme/dropdown_menu` script adds `aria-expanded`, closing on Escape, and the arrow keys. `item` takes the arguments of `link_to`, so `method:` and `data:` work. Each menu gets a unique id, or the one you pass as `id:`.
+
+```ruby
+dropdown_menu "Export" do
+  item "CSV", export_path(format: :csv)
+  item "Purge", purge_path, method: :delete, data: {confirm: "Sure?"}
+end
+```
+
+`dropdown_menu_tag` returns HTML, for blocks that return a string, such as `action_item`. It takes the items as an array of `[text, url, link_options]`. With no items it renders nothing.
+
+```ruby
+action_item :export, only: :index do
+  dropdown_menu_tag "Export", [["CSV", csv_path], ["Purge", purge_path, {method: :delete}]]
 end
 ```
 
@@ -419,9 +477,11 @@ By default it searches once three characters are typed, loads the next page as t
 | `load_all:` | `load_all: true` | Fetch every page up front and filter in the browser. For small collections. |
 | `per_page:` | `per_page: 20` | Page size to ask the endpoint for. |
 | `placeholder:` | `placeholder: "Search customers"` | Text shown while nothing is selected. |
-| `depends_on:` | `depends_on: :country_id` | The input this select depends on: `:country_id` in a form, `:country_id_eq` in a filter. |
-| `depends_param:` | `depends_param: "q[region_id_eq]"` | Query param that carries the parent's value, `q[<depends_on>_eq]` by default. |
+| `depends_on:` | `depends_on: :country_id` | The input this select depends on: `:country_id` in a form, `:country_id_eq` in a filter. An array names several parents: `depends_on: %i[country_id insured]`. |
+| `depends_param:` | `depends_param: "q[region_id_eq]"` | Query param that carries the parent's value, `q[<depends_on>_eq]` by default. With several parents, a Hash of parent to param: `depends_param: {country_id: "q[country_id_in]", insured: "insured"}`. A String raises `ArgumentError`. |
 | `depends_placeholder:` | `depends_placeholder: "Select a country first"` | Text shown while the parent is empty. |
+| `depends_optional:` | `depends_optional: true` | The select works with an empty parent, which sends nothing, instead of waiting for it. |
+| `auto_select_single:` | `auto_select_single: true` | With `load_all:`, selects the option when the endpoint offers only one and nothing is selected. |
 | `resource:` | `resource: Account` | Model or ActiveAdmin resource that has the endpoint, when the input is not an association. |
 | `options_name:` | `options_name: :external_id` | Which `searchable_select_options` of the resource to use, `:all` by default. |
 | `url:` | `url: -> { all_options_admin_accounts_path }` | The endpoint, as a string or a lambda run in the view. |
@@ -433,6 +493,16 @@ By default it searches once three characters are typed, loads the next page as t
 filter :country, as: :searchable_select
 filter :city, as: :searchable_select, depends_on: :country_id_eq, depends_placeholder: "Select a country first"
 filter :street, as: :searchable_select, depends_on: :city_id_eq, load_all: true
+```
+
+A select can depend on several parents, and stays disabled until each has a value. The parent can be a checkbox, which sends `true` or `false` and so always has a value, or a multiple select, which sends its values as `param[]`. With `depends_optional: true` an empty parent does not block the select. A change of any parent clears it.
+
+```ruby
+f.input :country, as: :searchable_select, multiple: true
+f.input :insured
+f.input :city, as: :searchable_select, load_all: true, depends_on: %i[country_id insured],
+  depends_param: {country_id: "q[country_id_in]", insured: "insured"}
+f.input :street, as: :searchable_select, load_all: true, depends_on: :city_id, depends_optional: true
 ```
 
 **The endpoint.** Declare it in the resource that holds the options:
@@ -475,7 +545,7 @@ Names from [activeadmin-searchable_select](https://github.com/codevise/activeadm
 {"results": [{"id": 17, "text": "Customer 17"}], "pagination": {"more": true}}
 ```
 
-This is the shape of activeadmin-searchable_select and select2, except that activeadmin-searchable_select counts pages from 0. An endpoint of your own, given with `url:`, has to answer the same way.
+This is the shape of activeadmin-searchable_select and select2, except that activeadmin-searchable_select counts pages from 0. An endpoint of your own, given with `url:`, has to answer the same way, or with a bare array that has no paging, `[{"id": 17, "text": "Customer 17"}]`. In a bare array the id may be named `value`.
 
 **Your own `searchable_select_options`.** If your app or another gem defines `searchable_select_options` on `ActiveAdmin::ResourceDSL`, that definition wins in any load order, and the theme's inputs need `url:`. To use the theme's instead, prepend it: `ActiveAdmin::ResourceDSL.prepend ActiveAdminTheme::SearchableSelect::ResourceDSL`.
 
@@ -488,6 +558,9 @@ This is the shape of activeadmin-searchable_select and select2, except that acti
 | `active_admin_theme/table_crisscross` | on | Row and column highlight on a cell click |
 | `active_admin_theme/confirm_dialog` | off | Focus and validation for `confirm_dialog` |
 | `active_admin_theme/secret_reveal` | off | `secret_reveal` |
+| `active_admin_theme/lazy_load` | off | `lazy_load` |
+| `active_admin_theme/tabs` | on | Opens a tab from the URL hash |
+| `active_admin_theme/dropdown_menu` | on | `aria-expanded`, Escape and arrow keys for `dropdown_menu` |
 | `active_admin_theme/searchable_select` | on | Tom Select on every select, and the searchable select |
 
 ## Nested menus
@@ -523,7 +596,7 @@ The sections of active_admin_page_objects then work on theme pages. Their README
 ### Patches to the base sections
 
 - `main_menu` is the top menu on desktop and the drawer on a narrow screen, at any depth. `labels`, `has_item?` and `go` take a label path, and `current_labels` returns one. `click` hovers each parent of the top menu; in the drawer it opens the drawer and each collapsed parent first.
-- `ActiveAdminPageObjects::Tabs` drives the theme's `tabs`. Every page has it as `tabs`.
+- `ActiveAdminPageObjects::Tabs` drives the theme's `tabs`. Every page has it as `tabs`. `select`, `content`, `has_tab?` and `has_selected?` take a String, the whole title ignoring case, or a Regexp. `select_matching` is `select` for a Regexp.
 - `form.field(name)` and `filters.filter(name)` return the searchable select classes for an input rendered `as: :searchable_select`. The theme registers them for that wrapper class with `register_field_class` and `register_filter_class`, so a page object that declares the base gem's `SelectField` or `SelectFilter` for such an input raises `DeclaredClassMismatch`.
 - `flashes` also takes `:warning`. The theme renders every flash type, while ActiveAdmin 4 drops all but `notice`, `alert` and `error`. For another type your app sets, call `ActiveAdminTheme::PageObjects.register_flash_type(:info)` in your spec helper; an unregistered type still raises `ArgumentError`.
 - The header has no user menu, so `user_menu_button` is never found. Pages get `current_user`, `logout_link`, `server_clock`, `main_menu_button` and `sidebar_toggle` instead.
@@ -534,6 +607,7 @@ page_object.main_menu.labels("Customer", "Referral Program") # => ["Payouts", "R
 
 show.tabs.titles # => ["Details", "History"]
 show.tabs.select("History")
+show.tabs.select_matching(/\AHist/)
 expect(show.tabs).to have_selected("History")
 show.tabs.content # the node of the selected tab; content("Details") for another
 ```
@@ -545,9 +619,17 @@ Every page has `sidebar`. Its sections are panels.
 ```ruby
 index.sidebar.titles # => ["Filters"]
 show.sidebar.panel("Help").body
+show.sidebar.panel(/\AStats/) # a Regexp matches the panel's own title
+expect(show.sidebar).to have_panel("Help")
 index.collapse_sidebar
 index.expand_sidebar
 index.sidebar_collapsed?
+```
+
+`panel` and `has_panel?` match the title of the sidebar panel itself, so a panel nested in its body does not count. To declare one, give the section the `:active_admin_sidebar` selector and the title, a String ignoring case or a Regexp:
+
+```ruby
+section :stats, ActiveAdminPageObjects::Panel, :active_admin_sidebar, "Stats"
 ```
 
 ### Selects
@@ -589,6 +671,19 @@ filter.close
 ```
 
 A multiple select takes an array in `fill`, and `select_option` once per label.
+
+```ruby
+filter.search("ac")
+expect(filter).to have_options("Acme", "Acme East") # exactly these labels, in any order
+expect(filter).to have_no_options("Acme") # waits until the list is another one
+expect(filter).to have_no_results # the "no results" message shows and no option does
+expect(filter).to have_results # an option is offered
+
+filters.filter(:customer).select_option("Acm", exact: false) # => "Acme"
+form.field(:customer).fill("17", exact: false) # same for fill
+```
+
+`has_options?`, `has_no_options?`, `has_no_results?` and `has_results?` open the dropdown and leave it open. With `exact: false`, `fill` and `select_option` pick the only option whose label contains the text, and return its label. No option, or several, raises.
 
 ### Components
 
@@ -636,6 +731,38 @@ dialog.confirm(validate: false) # skips the browser's required check
 merge = show.confirm_dialog(dialog: "merge") # by the id of a dialog with trigger: false
 merge.params # => {"ids[]" => "4", "options[keep]" => "newest"}, the hidden fields by name
 merge.open # clicks the element of the page that points at the dialog
+```
+
+```ruby
+secret = SecretReveal.find_in(show.attributes_table.row(:token))
+secret.inline? # true for value:, false for url:
+
+dialog.fill("Tags" => ["Alpha", "Beta"]) # an array for a multiple select; a String or Date for a number or date field
+
+lazy = LazyLoad.find_in(show.panel("History"))
+lazy.wait_until_loaded # raises when the request fails or runs out of time
+lazy.content_loaded?
+lazy.loading?
+lazy.error # the message of a failed request, or nil
+
+menu = page_object.action_items.dropdown("Export") # page_object.dropdown_menu("Export") for one in the page
+menu.items # => ["CSV", "Purge"]
+menu.click("CSV") # opens the list, then clicks the link
+menu.open
+menu.open?
+```
+
+Status tags can be asked from a row or an attributes table too:
+
+```ruby
+row = index.table.row(order.id)
+expect(row).to have_status_tag(:status, "Pending", status: :pending) # label ignoring case
+expect(row).to have_no_status_tag(:status, "Pending")
+tag = row.status_tag(:status)
+tag.label # => "Pending"
+tag.status # => "pending"
+tag.text, tag.kind, tag.color # as for StatusTag.find_in
+tag.has_text?("pending") # a String ignores case
 ```
 
 `all_in(scope)` returns every such component in the scope.
