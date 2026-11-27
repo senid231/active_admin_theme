@@ -70,21 +70,23 @@ npm install @activeadmin-plugins/active_admin_theme
 
 Keep the npm package and the gem on the same version.
 
-Tailwind only generates the classes it finds in files it scans. In `tailwind-active_admin.config.js`, add the gem's files to `content`:
+Tailwind only generates the classes it finds in files it scans. Tailwind 4 reads `@source` lines in CSS. The theme prints them, so you do not call `bundle show` yourself:
 
-```js
-const themePath = execSync('bundle show active_admin_theme', { encoding: 'utf-8' }).trim().split(/\r?\n/).pop();
-
-export default {
-  content: [
-    // ActiveAdmin's entries stay as they are
-    `${themePath}/app/**/*.{arb,erb,html,rb,js}`,
-    `${themePath}/lib/**/*.rb`,
-    // ...
-  ],
-  // ...
-}
+```sh
+bin/rails active_admin_theme:tailwind:sources
 ```
+
+To write them to a file, name it in `ACTIVE_ADMIN_THEME_SOURCES`. The paths in the file are relative to the file, but they still depend on where the gem is installed, so git-ignore it as you do the generated CSS import, and run the task in the same build step:
+
+```sh
+ACTIVE_ADMIN_THEME_SOURCES=app/assets/stylesheets/active_admin_theme.sources.css bin/rails active_admin_theme:tailwind:sources
+```
+
+```css
+@import "./active_admin_theme.sources.css";
+```
+
+Don't commit the printed output, because its paths are absolute. With a Tailwind config file, `ActiveAdminTheme.tailwind_content` returns the globs for `content`, so no `execSync` is needed.
 
 ### JavaScript
 
@@ -106,8 +108,11 @@ ActiveAdmin pages import the modules listed in `ActiveAdminTheme.javascripts`. W
   active_admin_theme/dropdown_menu
   active_admin_theme/table_crisscross
   active_admin_theme/searchable_select
+  active_admin_theme/confirm_dialog
 ]
 ```
+
+With Sprockets, the engine adds the theme scripts and the vendored Tom Select to `config.assets.precompile`, so don't list them yourself. Propshaft needs nothing.
 
 Change the list in an initializer to load fewer scripts or to add the optional ones:
 
@@ -171,7 +176,7 @@ All colors are CSS custom properties with a light value on `:root` and a dark va
 | --- | --- |
 | `--aat-page-bg`, `--aat-surface`, `--aat-surface-2`, `--aat-surface-hover`, `--aat-selected-row` | Page; panels, attributes tables and the tab content box; table headers, hover, selected rows |
 | `--aat-text`, `--aat-text-muted`, `--aat-border` | Text and borders |
-| `--aat-text-warning`, `--aat-text-danger` | Warning and danger text, such as an error message or a warning label. Readable (4.5:1 or better) on the page and panel surfaces in both modes. Use as `text-(--aat-text-danger)`. The `--aat-status-*` and `--aat-flash-*` colours are fills and are too light as text on the dark surface. |
+| `--aat-text-success`, `--aat-text-warning`, `--aat-text-danger` | Success, warning and danger text, such as a confirmation, a warning label or an error message. Readable (4.5:1 or better) on the page and panel surfaces in both modes. Use as `text-(--aat-text-danger)`. The `--aat-status-*` and `--aat-flash-*` colours are fills and are too light as text on the dark surface. |
 | `--aat-input-bg`, `--aat-input-border` | Form controls |
 | `--aat-accent`, `--aat-link`, `--aat-delete-link` | Accent, links, and delete links |
 | `--aat-button`, `--aat-button-hover`, `--aat-button-text` | Buttons and action items. Every action item is a filled button. |
@@ -228,13 +233,23 @@ A URL hash opens a tab, on page load and when the hash changes. `#history` opens
 
 ActiveAdmin 4 still has `panel`, but no longer wraps sidebar content or the show page's `attributes_table` in one. The theme wraps both again: sidebar sections in a panel titled with the section name, and `attributes_table` on a show page in a "Model Details" panel. `Panel#header_action` is not restored.
 
+A panel can collapse. `collapsible: true` turns the title into a button (`aria-expanded`, `aria-controls`) that shows and hides the body, and `collapsed: true` starts it closed. The body is hidden in the HTML, so the page does not flash it. Enter and Space work because the title is a real button:
+
+```ruby
+panel "JSON", collapsible: true, collapsed: true do
+  pre record.payload
+end
+```
+
+It works for a panel inside a sidebar block too. The `active_admin_theme/panel_toggle` script does the toggling and sends a bubbling `aat:panel:toggle` event with `detail: {panel, expanded}`. Without the script a collapsed panel stays closed. A panel without `collapsible:` is unchanged.
+
 ## Components
 
 Every component but the select widget is opt-in: nothing changes for an app that does not call it or load its script. In a `content do` block, wrap the helpers that return strings (`with_tooltip`, `pre_wrap`) in `text_node`.
 
 ### `status_tag`
 
-Tags have a solid fill and white text, as in theme 3, the same in light and dark mode. `ok` (also `published`, `complete`, `completed`, `green`) is green, `yes` and `info` (also `notice`, `blue`) are blue, `warning` (also `warn`, `orange`) is amber, `error` (also `errored`, `red`) is red, and anything else, such as `no`, is gray. `empty` shows only muted text. For any other value, define a CSS custom property named `--aat-status-<value>` in your CSS. For a one-off color, pass `color:` (a hex, named, `rgb()`, or `hsl()` color; anything else raises `ArgumentError`):
+Tags have a solid fill and white text, as in theme 3, the same in light and dark mode. `ok` (also `published`, `complete`, `completed`, `green`) is green, `yes` and `info` (also `notice`, `blue`) are blue, `warning` (also `warn`, `orange`) is amber, `error` (also `errored`, `red`, `danger`) is red, and anything else, such as `no`, is gray. `empty` shows only muted text. For any other value, define a CSS custom property named `--aat-status-<value>` in your CSS. For a one-off color, pass `color:` (a hex, named, `rgb()`, or `hsl()` color; anything else raises `ArgumentError`):
 
 ```ruby
 status_tag "Shipped"                # uses --aat-status-shipped, if you define it
@@ -242,6 +257,16 @@ status_tag "Late", color: "#b91c1c"
 ```
 
 Tags are square, small, and shown in uppercase, as in theme 3. The case is CSS only, so the HTML keeps the text you pass, while a browser test driver reads it in uppercase. The `StatusTag` page object and the base gem's `have_cell` and `have_row` compare String text ignoring case.
+
+### `notice`
+
+An inline note: a tinted box with a colored edge, readable in light and dark mode. `kind:` is `info` (the default), `success`, `warning` or `danger`; an unknown kind raises `ArgumentError`. A warning or danger has `role="alert"`, the others `role="status"`. A block builds the body.
+
+```ruby
+notice "The export may take a minute."
+notice "Check the dates before you export", kind: :warning
+notice(kind: :danger) { para "Payment failed" }
+```
 
 ### `truncate_text`
 
@@ -268,10 +293,12 @@ text_node with_tooltip("42", "<b>Total</b> orders", html: true)
 
 ### `pre_wrap`
 
-Preformatted text that wraps long lines:
+Preformatted text that wraps long lines. Blank text renders nothing, so an `attributes_table` row shows ActiveAdmin's empty marker. `max_height:` takes a CSS length or a number of pixels, caps the height, and scrolls the rest. The capped block can take keyboard focus:
 
 ```ruby
 text_node pre_wrap(response.body)
+text_node pre_wrap(response.body, max_height: "20rem")
+row(:payload) { |order| pre_wrap(order.payload, max_height: 240) }
 ```
 
 ### `secret_reveal`
@@ -292,7 +319,7 @@ Prefer `url:` for credentials. An inline value is in the page HTML, while an end
 
 ### `confirm_dialog`
 
-A confirmation dialog with optional form fields, built on the Flowbite modal that ActiveAdmin uses for batch actions. It submits a real form with the CSRF token. Needs the `active_admin_theme/confirm_dialog` script for focus handling and field validation. Do not place it inside another form.
+A confirmation dialog with optional form fields, built on the Flowbite modal that ActiveAdmin uses for batch actions. It submits a real form with the CSRF token. Its script, `active_admin_theme/confirm_dialog`, handles focus and field validation and is on by default. Do not place it inside another form.
 
 ```ruby
 confirm_dialog "Reject", title: "Reject order", message: "The buyer is notified.",
@@ -370,6 +397,44 @@ action_item :export, only: :index do
   dropdown_menu_tag "Export", [["CSV", csv_path], ["Purge", purge_path, {method: :delete}]]
 end
 ```
+
+### String helpers
+
+For decorators and view helpers outside an Arbre context, each component has a helper that returns an `html_safe` String: `status_tag_tag`, `secret_reveal_tag`, `notice_tag`, `confirm_dialog_tag`, `dropdown_menu_tag` and `pre_wrap`. `aat_arbre { ... }` builds any Arbre block the same way and trims Arbre's trailing newline. All of them are available in ActiveAdmin views. A plain object includes `ActiveAdminTheme::Helpers::Tags`. It must also answer the view methods a component calls, such as `link_to` for `dropdown_menu_tag`; a Draper decorator can delegate them to `h`.
+
+```ruby
+class OrderDecorator < Draper::Decorator
+  include ActiveAdminTheme::Helpers::Tags
+
+  def state
+    status_tag_tag(object.state, label: object.state_label)
+  end
+
+  def token
+    secret_reveal_tag(value: object.token)
+  end
+end
+```
+
+### Link sidebars
+
+`related_records_sidebar` and `external_links_sidebar` add a sidebar section of links: the records related to the page, and pages in external systems.
+
+```ruby
+ActiveAdmin.register Customer do
+  related_records_sidebar do |customer|
+    link "Orders", admin_orders_path(q: {customer_id_eq: customer.id})
+    link "Invoices", admin_invoices_path(q: {customer_id_eq: customer.id}),
+      count: -> { customer.invoices.count }, if: -> { authorized?(:read, Invoice) }
+  end
+
+  external_links_sidebar do |customer|
+    link "Billing", "https://billing.example/customers/#{customer.id}"
+  end
+end
+```
+
+The block gets the current record and runs in the view, so path helpers and `authorized?` work, but the view's instance variables do not. Related links are plain. External links open in a new tab with `rel="noopener noreferrer"`. The sections show on the show page by default; `only:`, `except:`, `if:` and `priority:` go to ActiveAdmin's sidebar. A link takes `count:`, a value or a lambda shown beside the label, and `if:`, a lambda or method name run in the view. A link whose condition is false is left out, and a section with no links is not rendered. The titles are "Related records" and "External links", from `active_admin_theme.sidebars.related_records` and `.external_links`, or from `title:`.
 
 ### Sticky first column
 
@@ -525,10 +590,13 @@ end
 | `allow_empty_search:` | `true` | `allow_empty_search: false`: a blank term returns nothing |
 | `value:` | `:id` | `value: :external_id`, or a lambda taking the record. An input cannot show the selected record of a lambda. |
 | `order:` | Primary key, descending | `order: :name` or `order: ->(scope) { scope.order(:position) }` |
-| `per_page:` | `50` | `per_page: 25` |
+| `per_page:` | `50`, or `ActiveAdminTheme.searchable_select_per_page` when set | `per_page: 25` |
+| `id_search:` | off | `id_search: true` finds `id:123`; `id_search: "#"` finds `#123` |
 | `additional_payload:` | none | `additional_payload: ->(customer) { {email: customer.email} }` |
 
-Lambdas run in the resource controller. An unknown option raises `ArgumentError`. The request's `per_page` overrides the page size up to 500, or up to the declared `per_page:` when that is larger.
+Lambdas run in the resource controller. An unknown option raises `ArgumentError` that names the known ones. The request's `per_page` overrides the page size up to 500, or up to the declared `per_page:` when that is larger. `ActiveAdminTheme.searchable_select_per_page = 30` sets the page size of endpoints that declare no `per_page:`.
+
+With `id_search:`, a term of the form `id:123` finds the record with that id, or with that `value:` attribute when it is a column. The text search is skipped, and the read scope and `q[...]` filters still apply. For an integer id, a term that is not a number, such as `id:abc`, is a text search.
 
 With `value:` other than the id, name the declaration in the input. The input then finds the selected record by that attribute. A lambda `value:` cannot be looked up, so an input that names such a declaration raises `ArgumentError`:
 
@@ -558,9 +626,10 @@ This is the shape of activeadmin-searchable_select and select2, except that acti
 | `active_admin_theme/layout` | on | Collapsible sidebar |
 | `active_admin_theme/server_clock` | on | Header clock |
 | `active_admin_theme/table_crisscross` | on | Row and column highlight on a cell click |
-| `active_admin_theme/confirm_dialog` | off | Focus and validation for `confirm_dialog` |
+| `active_admin_theme/confirm_dialog` | on | Focus and validation for `confirm_dialog` |
 | `active_admin_theme/secret_reveal` | off | `secret_reveal` |
 | `active_admin_theme/lazy_load` | off | `lazy_load` |
+| `active_admin_theme/panel_toggle` | off | `collapsible: true` on `panel` |
 | `active_admin_theme/tabs` | on | Opens a tab from the URL hash |
 | `active_admin_theme/dropdown_menu` | on | `aria-expanded`, Escape and arrow keys for `dropdown_menu` |
 | `active_admin_theme/searchable_select` | on | Tom Select on every select, and the searchable select |
@@ -578,6 +647,25 @@ In the top menu each deeper level flies out beside its item, and in the drawer i
 ## Header
 
 The header shows the site title and the top menu, and at its right end the dark mode switch, a server clock, your own links, the current user, and a logout icon. The clock, the user, and the logout icon come from the signed-in user (`current_active_admin_user?`) and `config.logout_link_path`. Without a current user the header shows only the title, the menu, the dark mode switch, and your links. To add links, override `_header_links.html.erb`, which is empty. To change the rest, override `_header_actions.html.erb`, `_header_leading.html.erb`, or `_header_navigation.html.erb`.
+
+The site title is plain text. To make it a link, set a path, or a Proc that runs in the view. `false` or `nil` leaves it as text:
+
+```ruby
+ActiveAdminTheme.site_title_link = "/admin"
+ActiveAdminTheme.site_title_link = -> { admin_root_path }
+```
+
+## Footer
+
+By default the footer is ActiveAdmin's "Powered by Active Admin" line. To show your own product, set any of these in an initializer. They replace the default line:
+
+```ruby
+ActiveAdminTheme.footer_product_name = "Acme Admin"
+ActiveAdminTheme.footer_version = "2.4.1"
+ActiveAdminTheme.footer_extra = -> { link_to "Changelog", changelog_path }
+```
+
+`footer_extra` is a String, or a Proc that runs in the view. A String is escaped, and a Proc's result is escaped unless it is `html_safe`. The theme draws the footer in `_site_footer.html.erb` with `data-aat-footer`. Its styles sit in a CSS layer, so utility classes in your own copy of the partial win.
 
 ## Page objects
 
@@ -601,6 +689,8 @@ The sections of active_admin_page_objects then work on theme pages. Their README
 - `ActiveAdminPageObjects::Tabs` drives the theme's `tabs`. Every page has it as `tabs`. `select`, `content`, `has_tab?` and `has_selected?` take a String, the whole title ignoring case, or a Regexp. `select_matching` is `select` for a Regexp.
 - `form.field(name)` and `filters.filter(name)` return the searchable select classes for an input rendered `as: :searchable_select`. The theme registers them for that wrapper class with `register_field_class` and `register_filter_class`, so a page object that declares the base gem's `SelectField` or `SelectFilter` for such an input raises `DeclaredClassMismatch`.
 - `flashes` also takes `:warning`. The theme renders every flash type, while ActiveAdmin 4 drops all but `notice`, `alert` and `error`. For another type your app sets, call `ActiveAdminTheme::PageObjects.register_flash_type(:info)` in your spec helper; an unregistered type still raises `ArgumentError`.
+- `attributes_table.secret(key)` and `row.secret(key)` return the cell's `SecretReveal`. `has_secret_mask?(key, mask = nil)`, `has_secret_value?(key, value)` and their `has_no_` forms wait as Capybara does.
+- A panel answers `collapsible?` and `expanded?`, and `expand`, `collapse` and `toggle` drive a `collapsible: true` panel. `body` waits for a visible body, so call `expand` first on a collapsed panel.
 - The header has no user menu, so `user_menu_button` is never found. Pages get `current_user`, `logout_link`, `server_clock`, `main_menu_button` and `sidebar_toggle` instead.
 
 ```ruby
@@ -752,7 +842,24 @@ menu.items # => ["CSV", "Purge"]
 menu.click("CSV") # opens the list, then clicks the link
 menu.open
 menu.open?
+
+show.attributes_table.secret(:token).reveal # => "s3cr3t"
+expect(show.attributes_table).to have_secret_mask(:token)
+expect(show.attributes_table).to have_secret_value(:token, "s3cr3t")
+expect(show.attributes_table.secret(:token)).to have_secret_value("s3cr3t")
+
+show.panel("JSON").expand # also collapse, toggle, collapsible?, expanded?
+
+note = Notice.find_in(show)
+note.kind # => "warning"
+note.text
+
+links = LinkList.find_in(show.sidebar.panel("Related records").body)
+links.links.map(&:label) # => ["Orders", "Invoices"]; each also has href, count and external?
+links.click("Orders")
 ```
+
+For RSpec, `require "active_admin_theme/page_objects/rspec"` and include `ActiveAdminTheme::PageObjects::RSpec::Matchers` after `ActiveAdminPageObjects::RSpec::Matchers`. That gives `have_secret_mask` and `have_secret_value`.
 
 Status tags can be asked from a row or an attributes table too:
 
