@@ -506,12 +506,12 @@ The header shows the site title and the top menu, and at its right end the dark 
 
 ## Page objects
 
-The gem ships page objects for system specs, built on [active_admin_page_objects](https://github.com/senid231/active_admin_page_objects) 2.x. The theme never loads them, and does not depend on that gem: add it to your test group and require the entry point from your spec helper.
+The gem ships page objects for system specs, built on [active_admin_page_objects](https://github.com/activeadmin-plugins/active_admin_page_objects) 2.x. The theme never loads them, and does not depend on that gem: add it to your test group and require the entry point from your spec helper.
 
 ```ruby
 # Gemfile
 group :test do
-  gem "active_admin_page_objects", github: "senid231/active_admin_page_objects"
+  gem "active_admin_page_objects", github: "activeadmin-plugins/active_admin_page_objects"
 end
 
 # spec/rails_helper.rb
