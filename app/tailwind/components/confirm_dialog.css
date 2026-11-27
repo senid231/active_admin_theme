@@ -3,16 +3,12 @@
   display: contents;
 }
 .aat-confirm-modal {
-  --aat-confirm-danger: #c0392b;
   display: none;
   position: fixed;
   inset: 0;
   z-index: 50;
   padding: 0.75rem;
   overflow-y: auto;
-}
-.dark .aat-confirm-modal {
-  --aat-confirm-danger: #f0867d;
 }
 .aat-confirm-modal.flex {
   display: flex;
@@ -83,7 +79,7 @@ body.dark:has(.aat-confirm-modal.flex) > div[class*="bg-gray-900/50"] {
 .aat-confirm-field[data-required] > .aat-confirm-label::after,
 .aat-confirm-field[data-required] > .aat-confirm-check > span::after {
   content: " *";
-  color: var(--aat-confirm-danger);
+  color: var(--aat-text-danger);
 }
 .aat-confirm-input {
   display: block;
@@ -100,7 +96,7 @@ body.dark:has(.aat-confirm-modal.flex) > div[class*="bg-gray-900/50"] {
   color-scheme: dark;
 }
 .aat-confirm-input[aria-invalid="true"] {
-  border-color: var(--aat-confirm-danger);
+  border-color: var(--aat-text-danger);
 }
 .aat-confirm-trigger:focus-visible,
 .aat-confirm-input:focus-visible,
