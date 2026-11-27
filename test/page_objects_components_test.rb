@@ -25,7 +25,7 @@ class PageObjectsComponentsTest < PageObjectsTestCase
     components = Pages::Components.new
     components.load
     tags = Theme::StatusTag.all_in(components.panel("Status tags").body)
-    assert_equal %w[ok warning error info empty yes shipped unstyled no late], tags.map(&:kind)
+    assert_equal %w[ok warning error info empty yes shipped unstyled green orange red blue no late], tags.map(&:kind)
     assert_equal "#b91c1c", tags.last.color
   end
 

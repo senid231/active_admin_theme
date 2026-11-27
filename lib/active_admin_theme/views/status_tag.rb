@@ -9,9 +9,17 @@ module ActiveAdminTheme
     # gray. `color:` sets `--aat-status-color` directly. Prepended to
     # ActiveAdmin's StatusTag; the CSS is components/status_tag.css.
     module StatusTagColor
-      # Values the theme or ActiveAdmin already color, and names the CSS uses
-      # for its own properties (--aat-status-color, -bg, -fg).
-      OWN_STATUSES = %w[ok warning error info empty yes no unset color bg fg].freeze
+      # Values the theme or ActiveAdmin already color, the aliases
+      # components/status_tag.css maps onto them, and names the CSS uses for its
+      # own properties (--aat-status-color, -bg, -fg). An inline style would
+      # beat the alias rules, so these get none.
+      OWN_STATUSES = %w[
+        ok published complete completed green
+        warning warn orange
+        error errored red
+        info notice blue
+        empty yes no unset color bg fg
+      ].freeze
       COLOR = /\A(\#(\h{3,4}|\h{6}|\h{8})|[a-zA-Z]+|(rgb|hsl)a?\([\d\s.,%\/a-zA-Z-]*\))\z/
 
       def build(status, options = {})

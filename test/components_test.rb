@@ -27,6 +27,13 @@ class ComponentsTest < Minitest::Test
     assert_equal "rgba(0, 0, 0, 0)", style("[data-status=empty]", "backgroundColor")
   end
 
+  def test_status_tag_aliases_take_the_theme_colors
+    {green: "ok", orange: "warning", red: "error", blue: "info"}.each do |alias_name, status|
+      assert_equal style("[data-status=#{status}]", "backgroundColor"), style("[data-status=#{alias_name}]", "backgroundColor"), alias_name
+      assert_nil find("[data-status=#{alias_name}]")[:style], alias_name
+    end
+  end
+
   def test_status_tag_yes_is_blue
     assert_equal "rgb(25, 114, 198)", style("[data-status=yes]", "backgroundColor")
   end

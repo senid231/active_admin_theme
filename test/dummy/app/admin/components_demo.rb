@@ -26,6 +26,7 @@ ActiveAdmin.register_page "Components" do
     panel "Status tags" do
       div id: "status-tags" do
         %w[ok warning error info empty yes shipped unstyled].each { |status| status_tag status }
+        %w[green orange red blue].each { |status| status_tag status }
         status_tag false
         status_tag "Late", color: "#b91c1c", id: "status-late"
       end
