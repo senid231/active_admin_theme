@@ -64,5 +64,10 @@ ActiveAdminPageObjects.register_selectors(
   tooltip: "[data-aat-tooltip]",
   pre_wrap: "pre.aat-pre-wrap",
   columns: ".aat-columns",
-  lazy_load: "[data-aat-lazy-load]"
+  lazy_load: "[data-aat-lazy-load]",
+  action_item_dropdown: ".aat-dropdown",
+  dropdown_menu: ".aat-dropdown",
+  dropdown_menu_toggle: ".aat-dropdown-toggle",
+  dropdown_menu_menu: ".aat-dropdown-menu",
+  dropdown_menu_item: ".aat-dropdown-menu a"
 )

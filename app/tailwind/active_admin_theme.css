@@ -6,6 +6,7 @@
  */
 
 @import "./components/confirm_dialog.css";
+@import "./components/dropdown_menu.css";
 @import "./components/status_tag.css";
 @import "./components/truncate_text.css";
 @import "./components/secret_reveal.css";

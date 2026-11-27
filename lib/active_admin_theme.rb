@@ -22,6 +22,7 @@ module ActiveAdminTheme
     active_admin_theme/layout
     active_admin_theme/server_clock
     active_admin_theme/tabs
+    active_admin_theme/dropdown_menu
     active_admin_theme/table_crisscross
     active_admin_theme/searchable_select
   ].freeze
