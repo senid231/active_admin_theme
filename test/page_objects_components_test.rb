@@ -29,6 +29,28 @@ class PageObjectsComponentsTest < PageObjectsTestCase
     assert_equal "#b91c1c", tags.last.color
   end
 
+  def test_status_tag_predicates_on_rows_and_attributes_tables
+    index = Pages::CustomerIndex.new
+    index.load
+    row = index.table.row(2)
+    assert row.has_status_tag?(:status, "pending", status: :pending)
+    assert row.has_status_tag?(:status, "Pending", type: "pending")
+    assert row.has_status_tag?(:status, /pend/i)
+    assert row.has_no_status_tag?(:status, "active")
+    assert row.has_no_status_tag?(:status, "pending", status: :active, wait: 0)
+    tag = row.status_tag(:status)
+    assert_equal "pending", tag.status
+    assert_equal "Pending", tag.label
+    assert_equal "pending", tag.kind
+    assert tag.has_status?(:pending)
+    assert tag.has_label?("PENDING")
+
+    show = customer_show(1)
+    assert show.attributes_table.has_status_tag?(:status, "ACTIVE", status: :active)
+    assert show.attributes_table.has_no_status_tag?(:status, "pending")
+    assert_equal "active", show.attributes_table.status_tag(:status).kind
+  end
+
   def test_warning_flash_renders_and_is_found_by_type
     visit "/admin/components/warning"
     flashes = Pages::Components.new.flashes

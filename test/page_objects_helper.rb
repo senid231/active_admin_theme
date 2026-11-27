@@ -43,6 +43,7 @@ module Pages
 
     section :attributes_table, PO::AttributesTable
     section :columns, Theme::Columns
+    section :help, PO::Panel, :active_admin_sidebar, "help"
   end
 
   class CustomerForm < PO::Page

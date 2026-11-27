@@ -61,6 +61,45 @@ class PageObjectsSearchableSelectTest < PageObjectsTestCase
     refute customer.open?
   end
 
+  def test_field_waits_for_the_exact_set_of_options
+    customer = new_order.field(:customer)
+    assert customer.has_options?(*Customer.order(:name).limit(10).pluck(:name))
+    assert customer.open?
+    customer.search("Customer 3")
+    assert customer.has_options?("Customer 30", "Customer 3")
+    refute customer.has_options?("Customer 3", wait: 0)
+    assert customer.has_no_options?("Customer 3", "Customer 31")
+    refute customer.has_no_options?("Customer 3", "Customer 30", wait: 0)
+  end
+
+  def test_field_reports_no_results_without_the_message_text
+    customer = new_order.field(:customer)
+    customer.search("no such customer")
+    assert customer.has_no_results?
+    refute customer.has_results?(wait: 0)
+    # search types after the text already there, so start from a fresh page.
+    customer = new_order.field(:customer)
+    customer.search("Customer 7")
+    assert customer.has_results?
+    refute customer.has_no_results?(wait: 0)
+  end
+
+  def test_field_picks_the_only_option_containing_the_text
+    customer = new_order.field(:customer)
+    assert_equal "Customer 17", customer.fill("tomer 17", exact: false)
+    assert_equal ["Customer 17"], customer.chosen
+    assert_raises(Capybara::Ambiguous) { customer.fill("Customer 3", exact: false) }
+    assert_raises(Capybara::ElementNotFound) { customer.fill("no such customer", exact: false) }
+  end
+
+  def test_filter_picks_the_only_option_containing_the_text
+    index = Pages::OrderIndex.new
+    index.load
+    customer = index.filters.filter(:customer)
+    assert_equal "Customer 17", customer.select_option("tomer 17", exact: false)
+    assert customer.has_item?("Customer 17")
+  end
+
   def test_field_clears_its_value
     form_page = Pages::OrderForm.new
     form_page.load(id: 1, action: "edit")

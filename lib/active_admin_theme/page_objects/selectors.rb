@@ -10,6 +10,7 @@ ActiveAdminPageObjects.register_selectors(
   server_clock: "[data-server-clock]",
 
   sidebar: "[data-aat-sidebar]",
+  sidebar_section: "[data-aat-sidebar] .panel",
   sidebar_toggle: "[data-aat-sidebar-toggle]",
   sidebar_collapsed: "[data-aat-page][data-aat-sidebar-collapsed]",
 
@@ -38,6 +39,7 @@ ActiveAdminPageObjects.register_selectors(
   searchable_select_loading: ".ts-wrapper.loading, .ts-wrapper.searching",
   searchable_select_dropdown_content: ".ts-dropdown-content",
   searchable_select_create: ".ts-dropdown .create",
+  searchable_select_no_results: ".ts-dropdown .no-results",
   searchable_select_message: ".ts-dropdown .no-results, .ts-dropdown .not-loading, .ts-dropdown .loading, .ts-dropdown .no-more-results",
   # A single select searches in its dropdown, a multiple one in its control.
   searchable_select_search: ".ts-dropdown .dropdown-input, .ts-control > input",
@@ -57,7 +59,6 @@ ActiveAdminPageObjects.register_selectors(
   secret_reveal_toggle: ".aat-secret-reveal-toggle",
   secret_reveal_error: ".aat-secret-reveal-error",
 
-  status_tag: ".status-tag",
   truncate_text: ".aat-truncate",
   truncate_text_popup: ".aat-truncate-popup",
   tooltip: "[data-aat-tooltip]",

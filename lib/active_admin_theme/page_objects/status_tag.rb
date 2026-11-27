@@ -1,14 +1,9 @@
 module ActiveAdminTheme
   module PageObjects
-    # A `status_tag`.
-    #
-    #   tag = StatusTag.find_in(index.table.row(1).cell(:status))
-    #   tag.text # => "Active": the text as the page wrote it, not as CSS shows it
-    #   expect(tag).to have_text("active") # a String ignores case
-    #   tag.kind # => "active"
-    class StatusTag < Component
-      selector_key :status_tag
-
+    # What the theme adds to the base gem's StatusTag: the DOM text, the color
+    # and a case-insensitive `has_text?`. Prepended to it, so a tag from
+    # `row.status_tag(:status)` has them too.
+    module StatusTagReaders
       # The value the tag is colored by: its `data-status`, e.g. "ok",
       # "error", "yes" or the parameterized status.
       # @return [String, nil]
@@ -50,6 +45,33 @@ module ActiveAdminTheme
         return args unless content.is_a?(String)
 
         [*type, text_pattern(content, exact: options[:exact] == true)]
+      end
+    end
+
+    ActiveAdminPageObjects::StatusTag.prepend(StatusTagReaders)
+
+    # A `status_tag`, found inside any scope. The base gem's StatusTag gives
+    # `label`, `status` and the row and attributes-table predicates
+    # `has_status_tag?(key, label, status:)`; the labels compare ignoring case,
+    # as the theme uppercases them.
+    #
+    #   tag = StatusTag.find_in(index.table.row(1).cell(:status))
+    #   tag.text # => "Active": the text as the page wrote it, not as CSS shows it
+    #   expect(tag).to have_text("active") # a String ignores case
+    #   tag.kind # => "active"
+    #   index.table.row(1).has_status_tag?(:status, "Active", status: :active)
+    class StatusTag < ActiveAdminPageObjects::StatusTag
+      class << self
+        # The status tag inside +scope+. Takes Capybara's find options.
+        def find_in(scope, **options)
+          new(scope, scope.find(*default_search_arguments, **options))
+        end
+
+        # Every status tag inside +scope+, in document order.
+        # @return [Array<StatusTag>]
+        def all_in(scope, **options)
+          scope.all(*default_search_arguments, **options).map { |node| new(scope, node) }
+        end
       end
     end
   end

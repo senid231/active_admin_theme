@@ -20,23 +20,29 @@ module ActiveAdminTheme
         scope.has_css?("select[data-searchable-select-url]", visible: :all, wait: false)
       end
 
-      def choose_option(scope, label, search: nil)
+      def choose_option(scope, label, search: nil, exact: true)
         return super(scope, label) unless tom_select?(scope)
 
-        pick_option(scope, label, search: search)
+        pick_option(scope, label, search: search, exact: exact)
       end
 
       # Picks the option labelled +label+. In a select that loads its options
       # the label is typed first; +search+ is another text to type, or false.
-      def pick_option(scope, label, search: nil)
+      # With `exact: false` +label+ is a part of the label, typed first too,
+      # and must be in one option only.
+      # @return [String] the label of the option picked
+      def pick_option(scope, label, search: nil, exact: true)
         dropdown = open_dropdown(scope)
-        text = search.nil? && remote_select?(scope) ? label : search
+        text = search.nil? && (!exact || remote_select?(scope)) ? label : search
         search_input(scope).send_keys(text) if text
         # A reply still on its way would redraw the options under the click.
         scope.assert_no_selector(sel(:searchable_select_loading))
-        dropdown.find(sel(:searchable_select_option), exact_text: label).click
+        option = dropdown.find(sel(:searchable_select_option), **(exact ? {exact_text: label} : {text: label, match: :one}))
+        label = option.text.strip
+        option.click
         scope.assert_selector(sel(:searchable_select_item)) { |item| item_label(item) == label }
         close_dropdown(scope)
+        label
       end
 
       def open_dropdown(scope)
@@ -137,6 +143,39 @@ module ActiveAdminTheme
         close_dropdown(root_element)
       end
 
+      # True when the open dropdown offers exactly these +labels+, in any
+      # order, now or within the wait time. Opens the dropdown and leaves it
+      # open, so call #search first to narrow the list.
+      def has_options?(*labels, wait: Capybara.default_max_wait_time)
+        wanted = labels.flatten.map { |label| label.to_s.strip }.sort
+        dropdown = open_dropdown(root_element)
+        eventually(wait: wait) { option_labels(dropdown).sort == wanted }
+      end
+
+      # Waits until the open dropdown no longer offers exactly these +labels+.
+      def has_no_options?(*labels, wait: Capybara.default_max_wait_time)
+        wanted = labels.flatten.map { |label| label.to_s.strip }.sort
+        dropdown = open_dropdown(root_element)
+        eventually(wait: wait) { option_labels(dropdown).sort != wanted }
+      end
+
+      # True when the open dropdown shows its "no results" message and offers
+      # no option, whatever the message says. Opens the dropdown. Takes
+      # Capybara's `wait:`.
+      def has_no_results?(**options)
+        open_dropdown(root_element)
+        root_element.has_css?(sel(:searchable_select_no_results), **options) &&
+          root_element.has_no_css?(sel(:searchable_select_option), **options)
+      end
+
+      # True when the open dropdown offers an option and no "no results"
+      # message. Opens the dropdown. Takes Capybara's `wait:`.
+      def has_results?(**options)
+        open_dropdown(root_element)
+        root_element.has_css?(sel(:searchable_select_option), **options) &&
+          root_element.has_no_css?(sel(:searchable_select_no_results), **options)
+      end
+
       # True when the open dropdown offers +label+. Call #open or #search first.
       def has_option?(label)
         option_offered?(root_element, label)
@@ -223,11 +262,13 @@ module ActiveAdminTheme
       # Picks the option labelled +label+. An Array picks each label of a
       # multiple select and removes the other items; nil removes every item.
       # +search+ is the text typed first: the label by default, false for none.
-      def fill(label, search: nil)
+      # With `exact: false` +label+ is a part of the label of one option, which
+      # is picked and its label returned; zero or several options raise.
+      def fill(label, search: nil, exact: true)
         return clear if label.nil?
         return fill_all(label.map(&:to_s), search) if label.is_a?(Array)
 
-        choose_option(root_element, label.to_s, search: search)
+        choose_option(root_element, label.to_s, search: search, exact: exact)
       end
 
       # Picks +option+, as `fill` does.
@@ -256,9 +297,11 @@ module ActiveAdminTheme
       include SearchableSelect
 
       # Picks the option labelled +label+. +search+ is the text typed first:
-      # the label by default, false for none.
-      def select_option(label, search: nil)
-        choose_option(root_element, label.to_s, search: search)
+      # the label by default, false for none. With `exact: false` +label+ is a
+      # part of the label of one option, which is picked and its label
+      # returned; zero or several options raise.
+      def select_option(label, search: nil, exact: true)
+        choose_option(root_element, label.to_s, search: search, exact: exact)
       end
     end
   end

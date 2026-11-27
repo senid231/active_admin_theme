@@ -5,6 +5,7 @@ module ActiveAdminTheme
     #
     #   show.tabs.titles # => ["Notes", "Raw"]
     #   show.tabs.select("Raw")
+    #   show.tabs.select(/\ARaw/)
     #   show.tabs.content.text
     module TabsPatch
       # The tab titles in document order.
@@ -13,10 +14,14 @@ module ActiveAdminTheme
         tab_buttons.map { |button| button.text.strip }
       end
 
-      # Clicks the tab titled +title+ (case-insensitive).
+      # Clicks the tab titled +title+: a String is the whole title, ignoring
+      # case, and a Regexp matches the title text. Every method that takes a
+      # +title+ reads it this way.
       def select(title)
         tab_button(title).click
       end
+
+      alias select_matching select
 
       # The title of the selected tab.
       # @return [String, nil]
@@ -26,12 +31,12 @@ module ActiveAdminTheme
 
       # True when the tab titled +title+ is the selected one.
       def has_selected?(title, **options)
-        eventually(**options) { same_text?(selected, title) }
+        eventually(**options) { text_match?(selected, title) }
       end
 
       # Waits until the tab titled +title+ is not the selected one.
       def has_no_selected?(title, **options)
-        eventually(**options) { !same_text?(selected, title) }
+        eventually(**options) { !text_match?(selected, title) }
       end
 
       # True when the component has a tab titled +title+.
@@ -62,7 +67,7 @@ module ActiveAdminTheme
       end
 
       def find_tab_button(title)
-        tab_buttons.find { |button| same_text?(button.text, title) }
+        tab_buttons.find { |button| text_match?(button.text, title) }
       end
 
       def tab_button(title)

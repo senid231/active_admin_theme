@@ -26,5 +26,5 @@ group :development, :test do
   gem 'cuprite'
   # Drives the dummy app in the tests of active_admin_theme/page_objects. Not on
   # RubyGems yet, so pinned to a commit.
-  gem 'active_admin_page_objects', github: 'activeadmin-plugins/active_admin_page_objects', ref: 'e174bd45a529e01a5722bf9b5f1cc5a68d932742'
+  gem 'active_admin_page_objects', github: 'activeadmin-plugins/active_admin_page_objects', ref: '8ec1677d4118559af117421fbf6576cdd5e33721'
 end

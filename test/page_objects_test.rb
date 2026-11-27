@@ -216,4 +216,32 @@ class PageObjectsTest < PageObjectsTestCase
     assert_match(/Note for customer 2/, tabs.content("Notes").text(:all))
     assert_raises(Capybara::ElementNotFound) { tabs.select("History") }
   end
+
+  def test_tabs_take_a_regexp_title
+    show = Pages::CustomerShow.new
+    show.load(id: 2)
+    tabs = show.tabs
+    assert tabs.has_tab?(/\ARa/)
+    assert tabs.has_no_tab?(/History/)
+    assert tabs.has_selected?(/\ANotes\z/)
+    assert tabs.has_no_selected?(/Raw/)
+    tabs.select_matching(/raw/i)
+    assert tabs.has_selected?(/\ARaw/)
+    assert tabs.has_no_selected?(/Notes/)
+    assert tabs.content(/\ANotes/).has_text?(:all, "Note for customer 2.")
+    tabs.select(/\ANotes/)
+    assert tabs.has_selected?("notes")
+    assert_raises(Capybara::ElementNotFound) { tabs.select_matching(/History/) }
+  end
+
+  def test_declared_sidebar_section_is_found_by_title
+    show = Pages::CustomerShow.new
+    show.load(id: 2)
+    assert_equal "Sidebar content shows inside a panel.", show.help.body.text
+    assert show.has_selector?(:active_admin_sidebar, /\AHel/)
+    assert show.has_no_selector?(:active_admin_sidebar, "Notes")
+    assert show.has_selector?(:active_admin_panel, "Notes", visible: :all)
+    assert show.sidebar.has_panel?(/\Ahelp\z/i)
+    assert show.sidebar.has_no_panel?("Notes")
+  end
 end
