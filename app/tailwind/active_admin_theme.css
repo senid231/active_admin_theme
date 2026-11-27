@@ -11,6 +11,7 @@
 @import "./components/truncate_text.css";
 @import "./components/secret_reveal.css";
 @import "./components/lazy_load.css";
+@import "./components/panel_toggle.css";
 @import "./components/pre_wrap.css";
 @import "./components/searchable_select.css";
 @import "./components/sidebar_tab.css";
