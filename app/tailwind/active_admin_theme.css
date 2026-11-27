@@ -16,6 +16,7 @@
 @import "./components/sidebar_tab.css";
 @import "./components/pagination.css";
 @import "./components/flash.css";
+@import "./components/notice.css";
 
 /*
  * ActiveAdmin releases with the layout hooks (activeadmin/activeadmin#9149 to
@@ -37,6 +38,7 @@
   --aat-selected-row: #d9e4ec;
   --aat-text: #323537;
   --aat-text-muted: #6b7177;
+  --aat-text-success: #1a6b34;
   --aat-text-warning: #806500;
   --aat-text-danger: #c62828;
   --aat-border: #e0e4e9;
@@ -81,6 +83,7 @@
   --aat-selected-row: #304457;
   --aat-text: #dde2e8;
   --aat-text-muted: #b0b8c2;
+  --aat-text-success: #7fd49a;
   --aat-text-warning: #e0c64a;
   --aat-text-danger: #f49b9b;
   --aat-border: #404750;

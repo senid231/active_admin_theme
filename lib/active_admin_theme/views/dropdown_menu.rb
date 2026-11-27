@@ -45,19 +45,21 @@ module ActiveAdminTheme
 
   module Helpers
     module DropdownMenu
+      include ArbreString
+
       # The component as a string, for blocks that return one, such as `action_item`.
       # `items` is an array of [text, url, link_options]; no items and no block render nothing.
       def dropdown_menu_tag(label, items = nil, **options, &block)
         return "".html_safe if items.blank? && block.nil?
 
-        Arbre::Context.new({}, self) do
+        aat_arbre do
           body = block && proc { instance_exec(&block) }
           dropdown_menu(label, options) do
             Array(items).each { |text, url, link_options| item(text, url, link_options) }
             body&.call
             nil
           end
-        end.to_s.html_safe
+        end
       end
     end
   end

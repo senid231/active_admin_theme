@@ -1,7 +1,7 @@
 /*
  * status_tag colors as in theme v3: a solid fill with white text, the same in
- * light and dark. Each tag takes `--aat-status-color`; ok, warning, error, info
- * and neutral are defined here on :root, and the theme also reads
+ * light and dark. Each tag takes `--aat-status-color`; ok, warning, error (also
+ * danger), info and neutral are defined here on :root, and the theme also reads
  * `--aat-status-<value>` for any other value (see
  * lib/active_admin_theme/views/status_tag.rb). A host overrides any of them in
  * its own CSS.
@@ -25,7 +25,7 @@
 .status-tag:is([data-status="warning"], [data-status="warn"], [data-status="orange"]) {
   --aat-status-color: var(--aat-status-warning);
 }
-.status-tag:is([data-status="error"], [data-status="errored"], [data-status="red"]) {
+.status-tag:is([data-status="error"], [data-status="errored"], [data-status="red"], [data-status="danger"]) {
   --aat-status-color: var(--aat-status-error);
 }
 .status-tag:is([data-status="info"], [data-status="notice"], [data-status="blue"]) {

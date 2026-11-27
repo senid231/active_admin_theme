@@ -1,3 +1,5 @@
+require_relative "../helpers/secret_reveal"
+
 module ActiveAdminTheme
   module Views
     # secret_reveal(url: secret_admin_account_path(account))

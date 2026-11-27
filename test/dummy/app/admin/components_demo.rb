@@ -1,5 +1,5 @@
 # Demo of the opt-in components: status_tag colors, truncate_text,
-# secret_reveal, with_tooltip and pre_wrap.
+# secret_reveal, with_tooltip, pre_wrap, notice and the string helpers.
 ActiveAdmin.register_page "Components" do
   menu parent: "Demo pages", priority: 6
 
@@ -25,7 +25,7 @@ ActiveAdmin.register_page "Components" do
 
     panel "Status tags" do
       div id: "status-tags" do
-        %w[ok warning error info empty yes shipped unstyled].each { |status| status_tag status }
+        %w[ok warning error danger info empty yes shipped unstyled].each { |status| status_tag status }
         %w[green orange red blue].each { |status| status_tag status }
         status_tag false
         status_tag "Late", color: "#b91c1c", id: "status-late"
@@ -70,6 +70,35 @@ ActiveAdmin.register_page "Components" do
     panel "Pre wrap" do
       div id: "pre-wrap" do
         text_node pre_wrap("first line\n" + "x" * 400)
+      end
+      div id: "pre-wrap-capped" do
+        text_node pre_wrap((1..40).map { |n| "line #{n}" }.join("\n"), max_height: "6rem")
+      end
+      div id: "pre-wrap-capped-px" do
+        text_node pre_wrap((1..40).map { |n| "line #{n}" }.join("\n"), max_height: 90)
+      end
+      div id: "pre-wrap-blank" do
+        attributes_table_for ActiveSupport::OrderedOptions.new.merge!(payload: "  ") do
+          row(:payload) { |record| pre_wrap(record.payload) }
+        end
+      end
+    end
+
+    panel "Notices" do
+      div id: "notices" do
+        %i[info success warning danger].each { |kind| notice "A #{kind} notice", kind: kind }
+        notice("A notice with no kind") { para "and a body", class: "notice-body" }
+      end
+      div(id: "notice-string") { text_node notice_tag("A notice from the string helper", kind: :warning) }
+    end
+
+    panel "String helpers" do
+      div id: "string-helpers" do
+        text_node status_tag_tag("Late", color: "#b91c1c", label: "Overdue")
+        text_node " "
+        text_node secret_reveal_tag(value: "helper-s3cr3t")
+        text_node " "
+        text_node aat_arbre { span "From aat_arbre", class: "from-arbre" }
       end
     end
   end

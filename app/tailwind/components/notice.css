@@ -1,0 +1,22 @@
+/* notice: a note inside the page. A tinted box with a colored edge; the text
+   keeps --aat-text, so it reads on the tint in both modes. */
+.aat-notice {
+  --aat-notice-accent: var(--aat-status-info);
+  margin-block: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--aat-notice-accent) 35%, var(--aat-surface));
+  border-inline-start: 4px solid var(--aat-notice-accent);
+  border-radius: 2px;
+  background-color: color-mix(in srgb, var(--aat-notice-accent) 12%, var(--aat-surface));
+  color: var(--aat-text);
+  line-height: 1.4;
+}
+.aat-notice[data-kind="success"] {
+  --aat-notice-accent: var(--aat-status-ok);
+}
+.aat-notice[data-kind="warning"] {
+  --aat-notice-accent: var(--aat-status-warning);
+}
+.aat-notice[data-kind="danger"] {
+  --aat-notice-accent: var(--aat-status-error);
+}

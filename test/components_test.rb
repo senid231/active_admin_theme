@@ -165,4 +165,83 @@ class ComponentsTest < Minitest::Test
     visit "/admin/components"
     assert_operator page.evaluate_script("document.documentElement.scrollWidth"), :<=, 390
   end
+
+  def test_status_tag_danger_takes_the_error_color
+    assert_equal style("[data-status=error]", "backgroundColor"), style("[data-status=danger]", "backgroundColor")
+    assert_nil find("[data-status=danger]")[:style]
+  end
+
+  def test_notice_kinds_have_roles_and_a_kind_each
+    assert_selector "#notices > .aat-notice", count: 5
+    {"info" => "status", "success" => "status", "warning" => "alert", "danger" => "alert"}.each do |kind, role|
+      assert_selector "#notices > .aat-notice[data-kind=#{kind}][role=#{role}]", text: "A #{kind} notice"
+    end
+    assert_selector "#notices > .aat-notice[data-kind=info] p.notice-body", text: "and a body"
+    assert_selector "#notice-string .aat-notice[data-kind=warning][role=alert]", text: "from the string helper"
+  end
+
+  def test_notice_text_is_readable_in_light_and_dark_mode
+    %w[info success warning danger].each do |kind|
+      assert_operator notice_contrast(kind), :>=, 4.5, "light #{kind}"
+    end
+    page.execute_script("document.documentElement.classList.add('dark')")
+    assert_equal "rgb(221, 226, 232)", style("#notices .aat-notice", "color")
+    %w[info success warning danger].each do |kind|
+      assert_operator notice_contrast(kind), :>=, 4.5, "dark #{kind}"
+    end
+  end
+
+  def test_text_success_token_is_readable_on_the_surfaces
+    read = ->(name) { page.evaluate_script("getComputedStyle(document.documentElement).getPropertyValue('--aat-#{name}').trim()") }
+    assert_equal "#1a6b34", read.("text-success")
+    names = %w[page-bg surface surface-2]
+    names.each { |name| assert_operator hex_contrast(read.("text-success"), read.(name)), :>=, 4.5, name }
+    page.execute_script("document.documentElement.classList.add('dark')")
+    assert_equal "#7fd49a", read.("text-success")
+    names.each { |name| assert_operator hex_contrast(read.("text-success"), read.(name)), :>=, 4.5, "dark #{name}" }
+  end
+
+  def test_pre_wrap_max_height_caps_the_height_and_scrolls
+    assert_equal "auto", style("#pre-wrap-capped pre", "overflowY")
+    assert page.evaluate_script("(() => { const e = document.querySelector('#pre-wrap-capped pre'); return e.scrollHeight > e.clientHeight })()")
+    assert_in_delta 90, page.evaluate_script("document.querySelector('#pre-wrap-capped-px pre').getBoundingClientRect().height"), 1
+    assert_selector "#pre-wrap-capped pre[tabindex='0']"
+  end
+
+  def test_pre_wrap_of_blank_text_shows_the_empty_marker
+    assert_no_selector "#pre-wrap-blank pre"
+    assert_selector "#pre-wrap-blank .attributes-table-empty-value"
+  end
+
+  def test_string_helpers_render_the_components
+    assert_selector "#string-helpers .status-tag[data-status=late]", text: /overdue/i
+    assert_equal "--aat-status-color:#b91c1c", find("#string-helpers .status-tag")[:style]
+    assert_selector "#string-helpers [data-aat-secret-reveal] .aat-secret-reveal-toggle"
+    assert_selector "#string-helpers span.from-arbre", text: "From aat_arbre"
+  end
+
+  private
+
+  def srgb_channels(color)
+    numbers = color.scan(/[\d.]+/).first(3).map(&:to_f)
+    color.start_with?("color(") ? numbers.map { |n| n * 255 } : numbers
+  end
+
+  def luminance(channels)
+    channels.map { |c| (c /= 255.0) <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055)**2.4 }.then { |r, g, b| 0.2126 * r + 0.7152 * g + 0.0722 * b }
+  end
+
+  def contrast(first, second)
+    light, dark = [luminance(first), luminance(second)].sort.reverse
+    (light + 0.05) / (dark + 0.05)
+  end
+
+  def hex_contrast(first, second)
+    contrast(*[first, second].map { |hex| hex.delete("#").scan(/../).map { |pair| pair.to_i(16) } })
+  end
+
+  def notice_contrast(kind)
+    selector = "#notices > .aat-notice[data-kind=#{kind}]"
+    contrast(srgb_channels(style(selector, "color")), srgb_channels(style(selector, "backgroundColor")))
+  end
 end

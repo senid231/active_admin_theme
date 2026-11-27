@@ -1,10 +1,12 @@
+require_relative "../helpers/status_tag"
+
 module ActiveAdminTheme
   module Views
     # status_tag "Shipped"                     # color from --aat-status-shipped
     # status_tag "Late", color: "#b91c1c"      # one-off color
     #
-    # ok, warning, error, info and empty are colored by the theme. For any
-    # other value the tag points `--aat-status-color` at `--aat-status-<value>`,
+    # ok, warning, error, danger, info and empty are colored by the theme. For
+    # any other value the tag points `--aat-status-color` at `--aat-status-<value>`,
     # which the host defines in its CSS; with no definition the tag stays
     # gray. `color:` sets `--aat-status-color` directly. Prepended to
     # ActiveAdmin's StatusTag; the CSS is components/status_tag.css.
@@ -16,7 +18,7 @@ module ActiveAdminTheme
       OWN_STATUSES = %w[
         ok published complete completed green
         warning warn orange
-        error errored red
+        error errored red danger
         info notice blue
         empty yes no unset color bg fg
       ].freeze

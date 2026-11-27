@@ -65,6 +65,7 @@ ActiveAdminPageObjects.register_selectors(
   pre_wrap: "pre.aat-pre-wrap",
   columns: ".aat-columns",
   lazy_load: "[data-aat-lazy-load]",
+  notice: ".aat-notice",
   action_item_dropdown: ".aat-dropdown",
   dropdown_menu: ".aat-dropdown",
   dropdown_menu_toggle: ".aat-dropdown-toggle",
