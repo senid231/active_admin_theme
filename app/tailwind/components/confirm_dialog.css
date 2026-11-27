@@ -95,6 +95,10 @@ body.dark:has(.aat-confirm-modal.flex) > div[class*="bg-gray-900/50"] {
   border: 1px solid var(--aat-input-border);
   border-radius: 0.25rem;
 }
+/* Lets the browser draw the date picker icon for a dark panel. */
+.dark .aat-confirm-input {
+  color-scheme: dark;
+}
 .aat-confirm-input[aria-invalid="true"] {
   border-color: var(--aat-confirm-danger);
 }

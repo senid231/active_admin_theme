@@ -3,6 +3,8 @@
 // attributes; this adds what it lacks: focus into the dialog and back to the
 // trigger, a Tab loop, a reset on close, and invalid-field marking. Listeners
 // sit on document, so it works for dialogs rendered at any time.
+// When a dialog opens it dispatches a bubbling "aat:confirm-dialog:open" event on
+// the dialog, with detail { dialog, trigger }.
 const FOCUSABLE = [
   "a[href]", "area[href]", "button:not([disabled])", "input:not([type=hidden]):not([disabled])",
   "select:not([disabled])", "textarea:not([disabled])", "summary", "iframe", "[contenteditable]:not([contenteditable=false])",
@@ -36,7 +38,12 @@ document.addEventListener("click", (event) => {
   openers.set(dialog, trigger)
   watchClose(dialog)
   // Flowbite's own click listener on the trigger shows the dialog first; wait a tick so it is visible.
-  setTimeout(() => (dialog.querySelector(".aat-confirm-body :is(input, select, textarea):not([type=hidden])") || dialog.querySelector(".aat-confirm-cancel")).focus())
+  setTimeout(() => {
+    // Listeners may fill or add fields, so the event goes out before the focus moves.
+    dialog.dispatchEvent(new CustomEvent("aat:confirm-dialog:open", { bubbles: true, detail: { dialog, trigger } }))
+    const first = dialog.querySelector(".aat-confirm-body :is(input, select, textarea):not([type=hidden])") || dialog.querySelector(".aat-confirm-cancel")
+    first.focus()
+  })
 })
 
 document.addEventListener("keydown", (event) => {

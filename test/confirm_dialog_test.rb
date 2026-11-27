@@ -149,6 +149,59 @@ class ConfirmDialogTest < Minitest::Test
     assert_current_path PAGE
   end
 
+  def test_number_date_and_multiple_select_fields_submit_under_the_scope
+    open_dialog("typed-confirm")
+    assert_selector "#typed-confirm-refund_amount[type=number][name='refund[amount]'][min='0'][step='0.01']"
+    assert_selector "#typed-confirm-refund_due_on[type=date][name='refund[due_on]'][required]"
+    assert_selector "#typed-confirm-refund_tags[multiple][name='refund[tags][]']"
+    assert_selector "#typed-confirm-refund_note.aat-confirm-input.note-input[maxlength='20']"
+    assert_selector "#typed-confirm-refund_meta_source[name='refund[meta][source]']"
+    assert_equal ["Beta"], page.evaluate_script("Array.from(document.getElementById('typed-confirm-refund_tags').selectedOptions, (option) => option.text)")
+    fill_in "Amount", with: "12.5"
+    fill_in "Due date", with: Date.new(2026, 12, 31)
+    select "Alpha", from: "Tags"
+    click_button "Confirm"
+    assert_text "POST"
+    assert_text '"amount":"12.5"'
+    assert_text '"due_on":"2026-12-31"'
+    assert_text '"tags":["Alpha","Beta"]'
+    assert_text '"meta":{"source":"admin"}'
+  end
+
+  def test_date_field_marked_required_blocks_submit
+    open_dialog("typed-confirm")
+    click_button "Confirm"
+    assert_selector "#typed-confirm", visible: :visible
+    assert_selector "#typed-confirm-refund_due_on[aria-invalid=true]"
+    assert_current_path PAGE
+  end
+
+  def test_opening_dispatches_an_event_on_the_dialog
+    visit PAGE
+    page.execute_script(<<~JS)
+      window.openEvents = []
+      document.addEventListener("aat:confirm-dialog:open", (event) => {
+        window.openEvents.push([event.target.id, event.detail.dialog.id, event.detail.trigger.id])
+      })
+    JS
+    find("#external-trigger").click
+    assert_selector "#external-confirm", visible: :visible
+    assert_equal [["external-confirm", "external-confirm", "external-trigger"]], page.evaluate_script("window.openEvents")
+  end
+
+  def test_a_listener_of_the_open_event_can_fill_a_field_before_focus
+    visit PAGE
+    page.execute_script(<<~JS)
+      document.addEventListener("aat:confirm-dialog:open", (event) => {
+        event.detail.dialog.querySelector("input[type=number]").value = "42"
+      })
+    JS
+    find("[data-modal-target='typed-confirm']").click
+    assert_selector "#typed-confirm", visible: :visible
+    assert_selector "#typed-confirm-refund_amount:focus"
+    assert_equal "42", find("#typed-confirm-refund_amount").value
+  end
+
   def test_closing_resets_the_form
     open_dialog("fields-confirm")
     fill_in "Reason", with: "Typed"

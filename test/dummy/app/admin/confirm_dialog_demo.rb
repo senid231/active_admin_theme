@@ -44,6 +44,18 @@ ActiveAdmin.register_page "Confirm dialog" do
                                       ]
     end
 
+    panel "Confirm with typed fields" do
+      confirm_dialog "Refund order", id: "typed-confirm", title: "Refund order", url: "/admin/confirm_dialog/echo",
+                                     scope: :refund,
+                                     fields: [
+                                       {name: :amount, label: "Amount", as: :number, value: 10, input_html: {min: 0, step: "0.01"}},
+                                       {name: :due_on, label: "Due date", as: :date, required: true},
+                                       {name: :tags, label: "Tags", as: :select, multiple: true, collection: %w[Alpha Beta Gamma], value: ["Beta"]},
+                                       {name: :note, label: "Note", as: :string, input_html: {maxlength: 20, class: "note-input"}},
+                                       {name: "meta[source]", label: "Source", as: :string, value: "admin"}
+                                     ]
+    end
+
     panel "Confirm with body controls" do
       confirm_dialog "Reject template", id: "body-confirm", title: "Reject template?", url: "/admin/confirm_dialog/echo" do
         label "Preset", for: "reject-preset"

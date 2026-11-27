@@ -98,7 +98,8 @@ module ActiveAdminTheme
       end
 
       # Sets the fields by label: text for a string or text field, the option
-      # text for a select, true or false for a boolean. A control of the
+      # text for a select (an array for a multiple select), true or false for a
+      # boolean, a string or Date for a number or date field. A control of the
       # dialog body, which is not a `fields:` entry, is found by its label,
       # id or name, as Capybara's `fill_in` finds it.
       def fill(values)
@@ -139,7 +140,7 @@ module ActiveAdminTheme
 
       def set_control(control, value)
         if control.tag_name == "select"
-          control.select(value.to_s)
+          Array(value).each { |text| control.select(text.to_s) }
         else
           control.set(value)
         end
