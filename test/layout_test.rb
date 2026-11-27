@@ -156,7 +156,8 @@ class LayoutTest < Minitest::Test
     visit "/admin/tabs"
     ids = all("[id]", visible: :all).map { |element| element[:id] }
     assert_equal ids.uniq, ids
-    assert_equal %w[summary tab-2024 explicit-1 summary-2 tab-2024-2 explicit-2], all(".aat-tab-panel", visible: :all).map { |panel| panel[:id] }
+    assert_equal %w[summary tab-2024 explicit-1 summary-2 tab-2024-2 explicit-2 flow-links], all(".aat-tab-panel", visible: :all).map { |panel| panel[:id] }
+    assert_selector "#flow-links-tab", text: "Flow Links"
     assert_empty all("[role=tab]", visible: :all).map { |tab| tab["data-tabs-target"] }.reject { |target| target.match?(/\A#[a-z]/) }
     second = all(".aat-tabs")[1]
     second.find("[role=tab]", text: "2024").click

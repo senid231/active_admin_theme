@@ -11,5 +11,8 @@ ActiveAdmin.register_page "Tabs" do
         tab("Explicit", id: "explicit-#{index + 1}") { para "Explicit #{index + 1}" }
       end
     end
+    tabs do
+      tab(:flow_links) { para "Flow links" }
+    end
   end
 end

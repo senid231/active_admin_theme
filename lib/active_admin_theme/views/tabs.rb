@@ -70,6 +70,8 @@ module ActiveAdminTheme
 
     class Tab < ActiveAdmin::Component
       def build(title, options = {})
+        # As in ActiveAdmin 3: a Symbol title shows titleized, and its id follows.
+        title = title.to_s.titleize if title.is_a?(Symbol)
         id = options.delete(:id)
         id = id ? Tabs.claim_id(helpers, id.to_s) : Tabs.unique_id(helpers, title.to_s.parameterize.presence || "tab")
         tabs = [parent, parent&.parent].find { |element| element.is_a?(Tabs) }
