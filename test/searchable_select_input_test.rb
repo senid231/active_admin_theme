@@ -52,6 +52,25 @@ class SearchableSelectInputTest < Minitest::Test
     end
   end
 
+  def test_dependent_options_render_as_data_attributes
+    html = page("/admin/dependent_lab")
+    data = ->(name, key) { html.at_css("select[name='#{name}']")["data-searchable-select-#{key}"] }
+
+    parents = [{"name" => "shipment[country_id]", "param" => "q[country_id_in]"}, {"name" => "shipment[insured]", "param" => "insured"}]
+    assert_equal parents, JSON.parse(data.("shipment[city_id]", "parents"))
+    assert_nil data.("shipment[city_id]", "parent-name")
+    assert_nil data.("shipment[city_id]", "parent-optional")
+
+    assert_equal "shipment[city_id]", data.("shipment[street_id]", "parent-name")
+    assert_equal "q[city_id_eq]", data.("shipment[street_id]", "parent-param")
+    assert_equal "true", data.("shipment[street_id]", "parent-optional")
+    assert_nil data.("shipment[street_id]", "parents")
+    assert_nil data.("shipment[street_id]", "auto-select")
+
+    assert_equal "true", data.("order[city_id]", "auto-select")
+    assert_nil data.("shipment[country_id][]", "parents")
+  end
+
   def test_callable_value_raises
     page("/admin/shipments/new")
     sources = ActiveAdmin.application.namespace(:admin).resource_for(Product).searchable_select_sources

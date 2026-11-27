@@ -96,21 +96,67 @@ const baseSettings = (el) => {
   return settings
 }
 
-const parentOf = (el) => {
+const specsOf = (el) => {
+  const raw = el.dataset.searchableSelectParents
+  if (raw) {
+    try {
+      const list = JSON.parse(raw)
+      if (Array.isArray(list)) return list
+    } catch (error) {
+      console.warn("searchable_select: invalid JSON in data-searchable-select-parents", el, error)
+    }
+  }
   const name = el.dataset.searchableSelectParentName
-  if (!name) return null
-  const fields = el.form ? Array.from(el.form.elements) : Array.from(document.querySelectorAll("select, input"))
-  const parent = fields.find((field) => field.name === name)
-  if (!parent) console.warn(`searchable_select: parent input ${name} not found`, el)
-  return parent || null
+  return name ? [{ name, param: el.dataset.searchableSelectParentParam }] : []
 }
 
-const pageUrl = (el, parent, query, page) => {
+// A multiple select is named `name[]`, and Rails adds a hidden input beside it
+// and beside a checkbox, so a parent is every field of that name.
+const parentsOf = (el) => {
+  const fields = el.form ? Array.from(el.form.elements) : Array.from(document.querySelectorAll("select, input"))
+  return specsOf(el).flatMap(({ name, param }) => {
+    const own = fields.filter((field) => field.name === name || field.name === `${name}[]`)
+    if (!own.length) console.warn(`searchable_select: parent input ${name} not found`, el)
+    return own.length ? [{ param, fields: own }] : []
+  })
+}
+
+const fieldValues = (field) => {
+  if (field.type === "checkbox" || field.type === "radio") return field.checked ? [field.value] : []
+  if (field.multiple) return Array.from(field.selectedOptions, (option) => option.value)
+  return [field.value]
+}
+
+const isMultiple = ({ fields }) => fields.some((field) => field.multiple || field.name.endsWith("[]"))
+
+// A lone checkbox is never empty: it sends true or false.
+const valuesOf = (parent) => {
+  const box = parent.fields.find((field) => field.type === "checkbox")
+  if (box && !isMultiple(parent)) return [String(box.checked)]
+  return parent.fields.flatMap(fieldValues).filter((value) => value !== "")
+}
+
+const stateOf = (parents) => JSON.stringify(parents.map(valuesOf))
+
+const optional = (el) => "searchableSelectParentOptional" in el.dataset
+
+const waiting = (el, parents) => !optional(el) && parents.some((parent) => !valuesOf(parent).length)
+
+const pageUrl = (el, parents, query, page) => {
   const url = new URL(el.dataset.searchableSelectUrl, window.location.href)
   if (query.trim()) url.searchParams.set("term", query.trim())
   url.searchParams.set("page", String(page))
   if (el.dataset.searchableSelectPerPage) url.searchParams.set("per_page", el.dataset.searchableSelectPerPage)
-  if (parent && parent.value) url.searchParams.set(el.dataset.searchableSelectParentParam, parent.value)
+  parents.forEach((parent) => {
+    const values = valuesOf(parent)
+    if (!parent.param || !values.length) return
+    if (!isMultiple(parent)) {
+      url.searchParams.set(parent.param, values[0])
+      return
+    }
+    const param = parent.param.endsWith("[]") ? parent.param : `${parent.param}[]`
+    values.forEach((value) => url.searchParams.append(param, value))
+  })
   return url.toString()
 }
 
@@ -124,23 +170,34 @@ const fetchPage = (href) =>
   fetch(href, { headers: { Accept: "application/json" }, credentials: "same-origin" })
     .then((response) => (response.ok ? response.json() : Promise.reject(response)))
 
-const hasMore = (data) => Boolean(data.pagination && data.pagination.more)
+// {results: [{id, text}], pagination: {more}}, or a bare array whose items may
+// name the id `value`.
+const resultsOf = (data) => {
+  const list = Array.isArray(data) ? data : data.results || []
+  return list.map((item) => (item.id === undefined && item.value !== undefined ? { ...item, id: item.value } : item))
+}
+
+const hasMore = (data) => Boolean(!Array.isArray(data) && data.pagination && data.pagination.more)
 
 const remoteFields = { valueField: "id", labelField: "text", searchField: ["text"] }
 
 // Every page of the endpoint up front; typing filters the loaded options.
-const loadAllSettings = (el, parent) => {
+const loadAllSettings = (el, parents) => {
   const fetchAll = (page, loaded) =>
-    fetchPage(pageUrl(el, parent, "", page)).then((data) => {
-      const results = loaded.concat(data.results || [])
+    fetchPage(pageUrl(el, parents, "", page)).then((data) => {
+      const results = loaded.concat(resultsOf(data))
       return hasMore(data) ? fetchAll(page + 1, results) : results
     })
   return {
     ...remoteFields,
-    preload: !(parent && !parent.value),
+    preload: !waiting(el, parents),
     shouldLoad: (query) => query === "",
     load(query, callback) {
-      fetchAll(1, []).then((results) => { if (el.tomselect === this) callback(results) }).catch(() => callback())
+      fetchAll(1, []).then((results) => {
+        if (el.tomselect !== this) return
+        callback(results)
+        if ("searchableSelectAutoSelect" in el.dataset && results.length === 1 && !this.items.length) this.setValue(String(results[0].id))
+      }).catch(() => callback())
     },
     render: { loading: () => message("loading", config.texts.loading) }
   }
@@ -152,7 +209,7 @@ const minCharsOf = (el) => {
 }
 
 // One page per request; the dropdown shows the results of one query at a time.
-const lazySettings = (el, parent) => {
+const lazySettings = (el, parents) => {
   const minChars = minCharsOf(el)
   const state = { shown: null, pending: null, token: 0, ids: new Set() }
   el.searchableSelectState = state
@@ -165,7 +222,7 @@ const lazySettings = (el, parent) => {
     shouldLoad: (query) => query.length >= minChars,
     // The server filters; a client-side text score would drop matches on other fields.
     score: (query) => (option) => (query.length >= minChars && state.ids.has(String(option.id)) ? 1 : 0),
-    firstUrl: (query) => pageUrl(el, parent, query, 1),
+    firstUrl: (query) => pageUrl(el, parents, query, 1),
     load(query, callback) {
       const href = this.getUrl(query)
       const first = new URL(href).searchParams.get("page") === "1"
@@ -190,7 +247,7 @@ const lazySettings = (el, parent) => {
             state.pending = null
             if (this.control_input.value === query) this.wrapper.classList.remove("searching")
           }
-          const results = data.results || []
+          const results = resultsOf(data)
           results.forEach((result) => state.ids.add(String(result.id)))
           // A late response must not reopen a dropdown the user already closed.
           const wasOpen = this.isOpen
@@ -252,13 +309,13 @@ const patchLazy = (el, select) => {
   }
 }
 
-const settingsFor = (el, parent) => {
+const settingsFor = (el, parents) => {
   let settings = baseSettings(el)
   const remote = el.matches(REMOTE)
   const lazy = remote && !("searchableSelectLoadAll" in el.dataset)
-  if (remote) settings = merge(settings, lazy ? lazySettings(el, parent) : loadAllSettings(el, parent))
+  if (remote) settings = merge(settings, lazy ? lazySettings(el, parents) : loadAllSettings(el, parents))
   settings = merge(settings, ownSettings(el))
-  if (parent && !parent.value) settings.placeholder = el.dataset.searchableSelectParentPlaceholder || config.texts.selectParentFirst
+  if (waiting(el, parents)) settings.placeholder = el.dataset.searchableSelectParentPlaceholder || config.texts.selectParentFirst
   return { settings, lazy }
 }
 
@@ -274,24 +331,24 @@ const closeAfterPick = (select) => {
   select.wrapper.addEventListener("keydown", () => { picked = false }, true)
 }
 
-const build = (el, parent) => {
-  if (parent) el.dataset.searchableSelectParentValue = parent.value
-  const { settings, lazy } = settingsFor(el, parent)
+const build = (el, parents) => {
+  if (parents.length) el.dataset.searchableSelectParentValue = stateOf(parents)
+  const { settings, lazy } = settingsFor(el, parents)
   const select = new TomSelect(el, settings)
   if (lazy) patchLazy(el, select)
   // Without a search input nothing shows the placeholder; the CSS prints this.
   if (!select.control_input.isConnected && select.settings.placeholder) select.control.dataset.placeholder = select.settings.placeholder
   if (!el.multiple) closeAfterPick(select)
-  if (parent && !parent.value) select.disable()
+  if (waiting(el, parents)) select.disable()
 }
 
-const rebuild = (el, parent) => {
+const rebuild = (el, parents) => {
   if (el.tomselect) el.tomselect.destroy()
   Array.from(el.options).forEach((option) => { if (option.value !== "") option.remove() })
   el.disabled = false
   // Lets selects that depend on this one reset too.
   el.dispatchEvent(new Event("change", { bubbles: true }))
-  build(el, parent)
+  build(el, parents)
 }
 
 const wanted = (el) => {
@@ -302,13 +359,15 @@ const wanted = (el) => {
 
 export const upgrade = (el) => {
   if (!wanted(el)) return
-  const parent = parentOf(el)
-  build(el, parent)
-  if (parent && !listening.has(el)) {
+  const parents = parentsOf(el)
+  build(el, parents)
+  if (parents.length && !listening.has(el)) {
     listening.add(el)
-    parent.addEventListener("change", () => {
-      if (el.dataset.searchableSelectParentValue !== parent.value) rebuild(el, parent)
-    })
+    parents.forEach(({ fields }) => fields.forEach((field) => {
+      field.addEventListener("change", () => {
+        if (el.dataset.searchableSelectParentValue !== stateOf(parents)) rebuild(el, parents)
+      })
+    }))
   }
 }
 

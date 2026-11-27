@@ -6,7 +6,7 @@ module ActiveAdminTheme
     # A <select> holding only the selected record(s); the script loads the rest
     # from a `searchable_select_options` endpoint. The README lists the options.
     module SearchableSelectBehavior
-      OPTION_KEYS = %i[url resource options_name placeholder depends_on depends_param depends_placeholder load_all min_chars per_page].freeze
+      OPTION_KEYS = %i[url resource options_name placeholder depends_on depends_param depends_placeholder depends_optional auto_select_single load_all min_chars per_page].freeze
 
       def formtastic_options
         super + OPTION_KEYS
@@ -52,12 +52,29 @@ module ActiveAdminTheme
         data[:searchable_select_load_all] = true if options[:load_all]
         data[:searchable_select_min_chars] = options[:min_chars] if options[:min_chars]
         data[:searchable_select_per_page] = options[:per_page] if options[:per_page]
-        if (parent = options[:depends_on])
-          data[:searchable_select_parent_name] = "#{object_name}[#{parent}]"
-          data[:searchable_select_parent_param] = options[:depends_param] || (Ransack::Predicate.detect_from_string(parent.to_s) ? "q[#{parent}]" : "q[#{parent}_eq]")
+        data[:searchable_select_auto_select] = true if options[:auto_select_single]
+        if (parents = options[:depends_on])
+          if parents.is_a?(Array)
+            data[:searchable_select_parents] = parents.map { |parent| {name: "#{object_name}[#{parent}]", param: searchable_select_parent_param(parent)} }.to_json
+          else
+            data[:searchable_select_parent_name] = "#{object_name}[#{parents}]"
+            data[:searchable_select_parent_param] = searchable_select_parent_param(parents)
+          end
+          data[:searchable_select_parent_optional] = true if options[:depends_optional]
           data[:searchable_select_parent_placeholder] = options[:depends_placeholder] if options[:depends_placeholder]
         end
         data
+      end
+
+      # `depends_param:` is a Hash of parent => param, or a String for one parent.
+      def searchable_select_parent_param(parent)
+        given = options[:depends_param]
+        if given.is_a?(Hash)
+          given = given.stringify_keys[parent.to_s]
+        elsif given && Array(options[:depends_on]).size > 1
+          raise ArgumentError, "searchable_select input :#{method} has several depends_on: parents, so depends_param: must be a Hash of parent => param"
+        end
+        given || (Ransack::Predicate.detect_from_string(parent.to_s) ? "q[#{parent}]" : "q[#{parent}_eq]")
       end
 
       def searchable_select_url
