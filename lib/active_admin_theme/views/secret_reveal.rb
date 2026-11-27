@@ -6,6 +6,15 @@ module ActiveAdminTheme
     # Shows the mask. A click requests the URL with fetch and shows the
     # `value` of the JSON reply; a second click hides it again. Nothing secret
     # is in the page until then. The endpoint must answer `{"value": "..."}`.
+    #
+    # secret_reveal(value: record.token)
+    #
+    # Inline mode: the value is in the page source, in an inert <template>,
+    # and a click shows it without a request. It is always shown as text, even
+    # an html_safe string, and may span lines. A blank value renders the
+    # "empty" text. Prefer url: for credentials: it can be authorised and
+    # logged per reveal.
+    #
     # Needs the opt-in module active_admin_theme/secret_reveal; see
     # ActiveAdminTheme.javascripts.
     class SecretReveal < ActiveAdmin::Component
@@ -22,22 +31,34 @@ module ActiveAdminTheme
       def build(options = {})
         options = options.dup
         url = options.delete(:url)
+        inline = options.key?(:value)
+        value = options.delete(:value)
         mask = options.delete(:mask) || "••••••••"
         method = (options.delete(:method) || :get).to_s.downcase.to_sym
-        raise ArgumentError, "secret_reveal needs url:" if url.blank?
+        raise ArgumentError, "secret_reveal takes url: or value:, not both" if inline && url.present?
+        raise ArgumentError, "secret_reveal needs url: or value:" if !inline && url.blank?
         raise ArgumentError, "secret_reveal method must be one of #{METHODS.join(", ")}, got #{method.inspect}" unless METHODS.include?(method)
 
         super(options)
+        if inline && value.blank?
+          add_class "attributes-table-empty-value"
+          return text_node(I18n.t("active_admin.empty"))
+        end
+
         add_class "aat-secret-reveal"
         set_attribute "data-aat-secret-reveal", ""
-        set_attribute "data-url", url
-        set_attribute "data-method", method.to_s.upcase
+        unless inline
+          set_attribute "data-url", url
+          set_attribute "data-method", method.to_s.upcase
+        end
         set_attribute "data-mask", mask
         button(type: "button", class: "aat-secret-reveal-toggle", title: "Click to reveal") do
           text_node EYE_ICON.html_safe
           text_node EYE_OFF_ICON.html_safe
           span(mask, class: "aat-secret-reveal-value")
         end
+        # String.new drops html_safe, so the value is escaped like any text.
+        text_node %(<template data-aat-secret-reveal-value>#{ERB::Util.html_escape(String.new(value.to_s))}</template>).html_safe if inline
         span("", class: "aat-secret-reveal-error", role: "alert", hidden: true)
       end
     end

@@ -2,6 +2,8 @@
 // A click on a [data-aat-secret-reveal] button requests data-url with fetch
 // and shows the "value" of the JSON reply in place of the mask; a second click
 // shows the mask again. The value is not kept: each reveal asks again.
+// Without data-url the value is in a <template data-aat-secret-reveal-value>
+// inside the root: a click shows its text, with no request.
 const csrfToken = () => document.querySelector("meta[name=csrf-token]")?.content
 
 const hide = (root, button) => {
@@ -10,7 +12,16 @@ const hide = (root, button) => {
   delete root.dataset.revealed
 }
 
+const show = (root, button, value) => {
+  button.querySelector(".aat-secret-reveal-value").textContent = value
+  button.title = "Click to hide"
+  root.dataset.revealed = ""
+}
+
 const reveal = async (root, button) => {
+  const template = root.querySelector(":scope > template[data-aat-secret-reveal-value]")
+  if (template) return show(root, button, template.content.textContent)
+
   const error = root.querySelector(".aat-secret-reveal-error")
   error.hidden = true
   root.dataset.loading = ""
@@ -27,9 +38,7 @@ const reveal = async (root, button) => {
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const data = await response.json()
     if (typeof data.value === "undefined" || data.value === null) throw new Error("no value in the reply")
-    button.querySelector(".aat-secret-reveal-value").textContent = String(data.value)
-    button.title = "Click to hide"
-    root.dataset.revealed = ""
+    show(root, button, String(data.value))
   } catch (e) {
     error.textContent = `Could not load the value (${e.message})`
     error.hidden = false

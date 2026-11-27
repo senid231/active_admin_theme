@@ -1,7 +1,8 @@
 module ActiveAdminTheme
   module PageObjects
     # The `secret_reveal` component: a mask that a click replaces with the
-    # value fetched from the server. Needs a JavaScript driver.
+    # value fetched from the server, or one held in the page (inline mode).
+    # Needs a JavaScript driver.
     #
     #   secret = SecretReveal.find_in(show.attributes_table.row(:token))
     #   secret.reveal # => "s3cr3t"
@@ -41,6 +42,11 @@ module ActiveAdminTheme
       # @return [String]
       def mask
         root_element["data-mask"]
+      end
+
+      # True when the value is in the page (`value:`), not fetched (`url:`).
+      def inline?
+        root_element["data-url"].nil?
       end
 
       # The message of a failed request, or nil.
