@@ -109,6 +109,7 @@ ActiveAdmin pages import the modules listed in `ActiveAdminTheme.javascripts`. W
   active_admin_theme/table_crisscross
   active_admin_theme/searchable_select
   active_admin_theme/confirm_dialog
+  active_admin_theme/panel_toggle
 ]
 ```
 
@@ -241,7 +242,7 @@ panel "JSON", collapsible: true, collapsed: true do
 end
 ```
 
-It works for a panel inside a sidebar block too. The `active_admin_theme/panel_toggle` script does the toggling and sends a bubbling `aat:panel:toggle` event with `detail: {panel, expanded}`. Without the script a collapsed panel stays closed. A panel without `collapsible:` is unchanged.
+It works for a panel inside a sidebar block too. The default script `active_admin_theme/panel_toggle` does the toggling and sends a bubbling `aat:panel:toggle` event with `detail: {panel, expanded}`. An app that removes it from `ActiveAdminTheme.javascripts` leaves a collapsed panel closed for good. A panel without `collapsible:` is unchanged.
 
 ## Components
 
@@ -434,7 +435,7 @@ ActiveAdmin.register Customer do
 end
 ```
 
-The block gets the current record and runs in the view, so path helpers and `authorized?` work, but the view's instance variables do not. Related links are plain. External links open in a new tab with `rel="noopener noreferrer"`. The sections show on the show page by default; `only:`, `except:`, `if:` and `priority:` go to ActiveAdmin's sidebar. A link takes `count:`, shown beside the label, and `if:`, a lambda or method name run in the view. A link whose condition is false is left out, and a section with no links is not rendered.
+The block gets the current record and runs in the view, so path helpers and `authorized?` work, but the view's instance variables do not. Related links open in the same tab unless they take `new_tab: true`. External links always open in a new tab. A new-tab link gets `target="_blank"` and `rel="noopener noreferrer"`. The sections show on the show page by default, external links first (priority 1), then related records (priority 2), above other sidebars. `only:`, `except:`, `if:` and `priority:` go to ActiveAdmin's sidebar. A link takes `count:`, shown beside the label, and `if:`, a lambda or method name run in the view. A link whose condition is false is left out, and a section with no links is not rendered.
 
 `count:` is a value, a lambda run in the view, or anything that answers `count`, such as a relation. A lambda may return such an object too. An Integer or a String is shown as it is, any other object is asked for its `count`, and `nil` shows no count. The count is worked out only for a link that shows.
 
@@ -573,6 +574,8 @@ By default it searches once three characters are typed, loads the next page as t
 
 **Dependent selects.** A dependent select stays disabled until its parent has a value, and sends that value with every request. When the parent changes or is cleared, the select is cleared and fires `change`, so a select that depends on it resets too. On page load a preselected value is kept, so deep links and submitted filters survive. With `load_all:` the options are fetched again for each parent value.
 
+While a `load_all:` select fetches its options, its `<select>` has the attribute `data-searchable-select-loading`. The attribute goes once the options are in and `auto_select_single:` has made its pick, or the request has failed. A select that depends on a loading one has it too, down the chain. Scripts and specs can wait on it: `select:not([data-searchable-select-loading])`.
+
 ```ruby
 filter :country, as: :searchable_select
 filter :city, as: :searchable_select, depends_on: :country_id_eq, depends_placeholder: "Select a country first"
@@ -648,7 +651,7 @@ This is the shape of activeadmin-searchable_select and select2, except that acti
 | `active_admin_theme/confirm_dialog` | on | Focus and validation for `confirm_dialog` |
 | `active_admin_theme/secret_reveal` | off | `secret_reveal` |
 | `active_admin_theme/lazy_load` | off | `lazy_load` |
-| `active_admin_theme/panel_toggle` | off | `collapsible: true` on `panel` |
+| `active_admin_theme/panel_toggle` | on | `collapsible: true` on `panel` |
 | `active_admin_theme/tabs` | on | Opens a tab from the URL hash |
 | `active_admin_theme/dropdown_menu` | on | `aria-expanded`, Escape and arrow keys for `dropdown_menu` |
 | `active_admin_theme/searchable_select` | on | Tom Select on every select, and the searchable select |
@@ -781,6 +784,15 @@ filter.load_more # scrolls to the end, waits for the next page, returns the labe
 filter.close
 ```
 
+A dependent select reloads when its parent changes. `fill`, `select_option`, `open` and the other methods that open the dropdown wait for that first: until `data-searchable-select-loading` is gone and the select is enabled. Call `wait_until_ready` when the spec does not touch the select itself, such as before submitting a form whose child picks its only option (`auto_select_single:`). `ready?` tells the state without waiting.
+
+```ruby
+form.field(:country).fill("Poland")
+form.field(:city).wait_until_ready # takes wait:, raises when the time is up
+form.field(:city).selected # => "Warsaw", picked by auto_select_single
+form.submit
+```
+
 A multiple select takes an array in `fill`, and `select_option` once per label.
 
 ```ruby
@@ -874,7 +886,7 @@ note.kind # => "warning"
 note.text
 
 links = LinkList.find_in(show.sidebar.panel("Related records").body)
-links.links.map(&:label) # => ["Orders", "Invoices"]; each also has href, count, external? and group
+links.links.map(&:label) # => ["Orders", "Invoices"]; each also has href, count, external?, new_tab? and group
 links.groups # => ["Shipping", "Billing"], the headings; empty when there are none
 links.links(group: "Billing")
 links.click("Orders")

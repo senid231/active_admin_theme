@@ -2,7 +2,8 @@
 # list that use them, paging (71 countries), and a dependent select (city
 # follows country). The cities list filters by several countries. The
 # dependent lab page shows several parents, an optional parent, a fill that
-# selects its only option, and an endpoint that answers with a bare array.
+# selects its only option, a chain behind such a fill, and an endpoint that
+# answers with a bare array.
 ActiveAdmin.register Customer do
   searchable_select_options label: :name, search: :name_cont, order: :name, per_page: 10
 end
@@ -105,6 +106,17 @@ ActiveAdmin.register_page "Dependent lab" do
           f.input :country, as: :searchable_select, min_chars: 0
           f.input :city, as: :searchable_select, options_name: :capitals, depends_on: :country_id, load_all: true, auto_select_single: true
           f.input :customer, as: :searchable_select, url: "/admin/dependent_lab/bare_customers", min_chars: 0
+        end
+      end
+    end
+
+    # The city picks itself while it loads, and the street waits for it.
+    panel "A chain with an auto select" do
+      active_admin_form_for Shipment.new, as: :route, url: "#", html: {id: "lab-chain"} do |f|
+        f.inputs do
+          f.input :country, as: :searchable_select, min_chars: 0
+          f.input :city, as: :searchable_select, options_name: :capitals, depends_on: :country_id, load_all: true, auto_select_single: true
+          f.input :street, as: :searchable_select, depends_on: :city_id, load_all: true
         end
       end
     end

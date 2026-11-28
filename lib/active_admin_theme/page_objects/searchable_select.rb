@@ -34,7 +34,7 @@ module ActiveAdminTheme
       def pick_option(scope, label, search: nil, exact: true)
         dropdown = open_dropdown(scope)
         text = search.nil? && (!exact || remote_select?(scope)) ? label : search
-        search_input(scope).send_keys(text) if text
+        type_search(scope, text) if text
         # A reply still on its way would redraw the options under the click.
         scope.assert_no_selector(sel(:searchable_select_loading))
         option = dropdown.find(sel(:searchable_select_option), **(exact ? {exact_text: label} : {text: label, match: :one}))
@@ -45,10 +45,31 @@ module ActiveAdminTheme
         label
       end
 
+      # A dependent select is rebuilt, and disabled for a while, when its
+      # parent changes: a click that opened nothing is made again.
       def open_dropdown(scope)
         dropdown = sel(:searchable_select_dropdown)
-        scope.find(sel(:searchable_select_control)).click unless scope.has_css?(dropdown, visible: true, wait: false)
-        scope.find(dropdown, visible: true)
+        await_ready(scope)
+        timer = Capybara::Helpers.timer(expire_in: Capybara.default_max_wait_time)
+        until scope.has_css?(dropdown, visible: true, wait: false)
+          click_control(scope)
+          break if scope.has_css?(dropdown, visible: true, wait: 0.5) || timer.expired?
+        end
+        scope.find(dropdown, visible: true, wait: false)
+      end
+
+      def click_control(scope)
+        scope.find(sel(:searchable_select_enabled_control), wait: 0.5).click
+      rescue Capybara::ElementNotFound, *scope.session.driver.invalid_element_errors
+        nil
+      end
+
+      def ready_select?(scope)
+        scope.has_no_css?(sel(:searchable_select_not_ready), visible: :all, wait: false)
+      end
+
+      def await_ready(scope, **options)
+        scope.assert_no_selector(sel(:searchable_select_not_ready), visible: :all, **options)
       end
 
       # A multiple select keeps its dropdown open after a pick, and it then
@@ -62,6 +83,24 @@ module ActiveAdminTheme
 
       def search_input(scope)
         scope.find(sel(:searchable_select_search), match: :first)
+      end
+
+      # Cuprite 0.17 and older click a focused input before they type, and that
+      # click closes an open multiple select. The keyboard types without one.
+      def type_search(scope, text)
+        input = search_input(scope)
+        keyboard = driver_keyboard(input.session.driver)
+        if keyboard && input.session.evaluate_script("document.activeElement === arguments[0]", input)
+          keyboard.type(text)
+        else
+          input.send_keys(text)
+        end
+      end
+
+      def driver_keyboard(driver)
+        browser = driver.browser if driver.respond_to?(:browser)
+        keyboard = browser.keyboard if browser.respond_to?(:keyboard)
+        keyboard if keyboard.respond_to?(:type)
       end
 
       # Tom Select's remove_button plugin appends a link to each item, and its
@@ -93,10 +132,23 @@ module ActiveAdminTheme
         root_element.has_css?(sel(:searchable_select_dropdown), visible: true, wait: false)
       end
 
+      # True when the select is not loading its options, and no select it
+      # depends on is. Does not wait.
+      def ready?
+        ready_select?(root_element)
+      end
+
+      # Waits until the select has loaded its options and made its automatic
+      # pick, e.g. after its parent changed. Takes Capybara's `wait:`.
+      def wait_until_ready(**options)
+        await_ready(root_element, **options)
+        self
+      end
+
       # Opens the dropdown and types +text+ into its search box.
       def search(text)
         open_dropdown(root_element)
-        search_input(root_element).send_keys(text)
+        type_search(root_element, text)
         root_element.assert_no_selector(sel(:searchable_select_loading))
         self
       end
@@ -137,7 +189,7 @@ module ActiveAdminTheme
       # select with `tom_select: {create: true}`.
       def create_option(text)
         dropdown = open_dropdown(root_element)
-        search_input(root_element).send_keys(text)
+        type_search(root_element, text)
         dropdown.find(sel(:searchable_select_create), text: text).click
         root_element.assert_selector(sel(:searchable_select_item)) { |item| item_label(item) == text }
         close_dropdown(root_element)

@@ -37,6 +37,9 @@ ActiveAdminPageObjects.register_selectors(
   searchable_select_item: ".ts-control .item",
   searchable_select_item_remove: ".remove",
   searchable_select_loading: ".ts-wrapper.loading, .ts-wrapper.searching",
+  # On the <select> while a dependent select fetches its options.
+  searchable_select_not_ready: "select[data-searchable-select-loading]",
+  searchable_select_enabled_control: ".ts-wrapper:not(.disabled) > .ts-control",
   searchable_select_dropdown_content: ".ts-dropdown-content",
   searchable_select_create: ".ts-dropdown .create",
   searchable_select_no_results: ".ts-dropdown .no-results",

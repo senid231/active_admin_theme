@@ -46,7 +46,12 @@ const FILTER = ".filters-form-field.select select"
 const FORM = "form.formtastic li.input.select select"
 const AUTO = [PREDICATE, BOOLEAN_FILTER, FILTER, FORM].join(", ")
 
+// On a select while it fetches its options, or while a parent of it does.
+const LOADING = "data-searchable-select-loading"
+const LOADING_CHANGE = "searchable-select:loading-change"
+
 const listening = new WeakSet()
+const fetching = new WeakSet()
 
 const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`)
 const message = (name, text) => `<div class="${name}">${escapeHtml(text)}</div>`
@@ -179,6 +184,13 @@ const resultsOf = (data) => {
 
 const hasMore = (data) => Boolean(!Array.isArray(data) && data.pagination && data.pagination.more)
 
+const syncLoading = (el, parents) => {
+  const loading = fetching.has(el) || parents.some(({ fields }) => fields.some((field) => field.hasAttribute(LOADING)))
+  if (loading === el.hasAttribute(LOADING)) return
+  el.toggleAttribute(LOADING, loading)
+  el.dispatchEvent(new Event(LOADING_CHANGE))
+}
+
 const remoteFields = { valueField: "id", labelField: "text", searchField: ["text"] }
 
 // Every page of the endpoint up front; typing filters the loaded options.
@@ -193,11 +205,26 @@ const loadAllSettings = (el, parents) => {
     preload: !waiting(el, parents),
     shouldLoad: (query) => query === "",
     load(query, callback) {
+      // Tom Select delays a load by its throttle; rebuild() may have destroyed
+      // this instance since.
+      if (el.tomselect !== this) return
+      fetching.add(el)
+      syncLoading(el, parents)
+      // The auto select comes first, so a select that depends on this one is
+      // loading before this one stops.
+      const done = () => {
+        fetching.delete(el)
+        syncLoading(el, parents)
+      }
       fetchAll(1, []).then((results) => {
         if (el.tomselect !== this) return
         callback(results)
         if ("searchableSelectAutoSelect" in el.dataset && results.length === 1 && !this.items.length) this.setValue(String(results[0].id))
-      }).catch(() => callback())
+        done()
+      }).catch(() => {
+        callback()
+        if (el.tomselect === this) done()
+      })
     },
     render: { loading: () => message("loading", config.texts.loading) }
   }
@@ -316,7 +343,7 @@ const settingsFor = (el, parents) => {
   if (remote) settings = merge(settings, lazy ? lazySettings(el, parents) : loadAllSettings(el, parents))
   settings = merge(settings, ownSettings(el))
   if (waiting(el, parents)) settings.placeholder = el.dataset.searchableSelectParentPlaceholder || config.texts.selectParentFirst
-  return { settings, lazy }
+  return { settings, lazy, preloads: remote && !lazy && settings.preload === true }
 }
 
 // Picking an option in a single select hands focus back to the control, and
@@ -345,8 +372,12 @@ const dropStaleRefresh = (select) => {
 
 const build = (el, parents) => {
   if (parents.length) el.dataset.searchableSelectParentValue = stateOf(parents)
-  const { settings, lazy } = settingsFor(el, parents)
+  const { settings, lazy, preloads } = settingsFor(el, parents)
+  // Tom Select starts the preload after its load throttle.
+  if (preloads) fetching.add(el)
+  else fetching.delete(el)
   const select = new TomSelect(el, settings)
+  syncLoading(el, parents)
   if (lazy) patchLazy(el, select)
   dropStaleRefresh(select)
   // Without a search input nothing shows the placeholder; the CSS prints this.
@@ -380,6 +411,7 @@ export const upgrade = (el) => {
       field.addEventListener("change", () => {
         if (el.dataset.searchableSelectParentValue !== stateOf(parents)) rebuild(el, parents)
       })
+      field.addEventListener(LOADING_CHANGE, () => syncLoading(el, parents))
     }))
   }
 }
