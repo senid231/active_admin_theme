@@ -65,6 +65,11 @@ ActiveAdmin.register Customer do
     end
   end
 
+  related_records_sidebar title: "New tab", priority: 50, if: link_variant.("tab") do
+    link "Overview", "/overview"
+    link "Logs", "/logs", new_tab: true
+  end
+
   related_records_sidebar title: "Few links", priority: 50, if: link_variant.("few") do
     group "Shipping" do
       link "Parcels", "/a"

@@ -89,7 +89,7 @@ class LinkSidebarsTest < PageObjectsTestCase
     assert_equal [[:show], nil], config.sidebar_sections.map { |section| section.options[:only] }
     assert_equal [nil, [:index]], config.sidebar_sections.map { |section| section.options[:except] }
     assert_equal ["Related records", "Mine"], config.sidebar_sections.map(&:display_title)
-    assert_equal [10, 3], config.sidebar_sections.map(&:priority)
+    assert_equal [2, 3], config.sidebar_sections.map(&:priority)
   end
 
   def test_a_sidebar_without_a_block_raises
@@ -191,5 +191,22 @@ class LinkSidebarsTest < PageObjectsTestCase
   def test_an_unknown_link_option_raises
     error = assert_raises(ArgumentError) { Sidebars::Collector.new(nil).link("A", "/a", badge: 1) }
     assert_match(/unknown option :badge, known options are :count, :if/, error.message)
+  end
+
+  def test_a_related_link_can_open_a_new_tab
+    list = variant("tab", "New tab")
+    assert_equal [false, true], list.links.map(&:new_tab?)
+    assert_equal [false, false], list.links.map(&:external?)
+    logs = all("a", text: "Logs").first
+    assert_equal ["_blank", "noopener noreferrer"], [logs[:target], logs[:rel]]
+  end
+
+  def test_external_links_come_first_by_default
+    config = Struct.new(:sidebar_sections).new([])
+    block = proc { link "A", "/a" }
+    Sidebars.add(config, :related_records, nil, {}, block)
+    Sidebars.add(config, :external_links, nil, {}, block)
+    Sidebars.add(config, :external_links, nil, {priority: 7}, block)
+    assert_equal [2, 1, 7], config.sidebar_sections.map { |section| section.options[:priority] }
   end
 end

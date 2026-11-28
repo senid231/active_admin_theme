@@ -36,7 +36,7 @@
   color: var(--aat-text-muted);
   font-variant-numeric: tabular-nums;
 }
-/* An external link says it leaves the app. */
+/* A link that opens a new tab says so. */
 .aat-link-list a[target="_blank"]::after {
   content: "\2197";
   flex: none;

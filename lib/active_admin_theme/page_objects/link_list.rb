@@ -8,8 +8,9 @@ module ActiveAdminTheme
     class LinkList < Component
       selector_key :link_list
 
-      Link = Struct.new(:label, :href, :count, :external, :group, keyword_init: true) do
+      Link = Struct.new(:label, :href, :count, :external, :new_tab, :group, keyword_init: true) do
         alias_method :external?, :external
+        alias_method :new_tab?, :new_tab
       end
 
       # The links in document order, those under a heading included. `href` is
@@ -51,7 +52,8 @@ module ActiveAdminTheme
           label: node.find(:active_admin, :link_list_label, wait: false).text.strip,
           href: node[:href],
           count: count && (count.match?(/\A\d+\z/) ? count.to_i : count),
-          external: node[:target] == "_blank",
+          external: !node[:"data-aat-external"].nil?,
+          new_tab: node[:target] == "_blank",
           group: heading
         )
       end

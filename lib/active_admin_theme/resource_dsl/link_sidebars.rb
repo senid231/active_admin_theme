@@ -20,7 +20,8 @@ module ActiveAdminTheme
     end
 
     TITLES = {related_records: "Related records", external_links: "External links"}.freeze
-    Link = Struct.new(:label, :href, :count, :condition, :group, keyword_init: true)
+    DEFAULT_PRIORITIES = {external_links: 1, related_records: 2}.freeze
+    Link = Struct.new(:label, :href, :count, :condition, :group, :new_tab, keyword_init: true)
     GROUP_HEADINGS = [:auto, true, false].freeze
     # With :auto, headings show above this many links.
     HEADINGS_FROM = 6
@@ -49,11 +50,11 @@ module ActiveAdminTheme
         end
       end
 
-      def link(label, href, count: nil, **options)
+      def link(label, href, count: nil, new_tab: false, **options)
         unknown = options.keys - [:if]
-        ::Kernel.raise ::ArgumentError, "link: unknown option #{unknown.map(&:inspect).join(", ")}, known options are :count, :if" if unknown.any?
+        ::Kernel.raise ::ArgumentError, "link: unknown option #{unknown.map(&:inspect).join(", ")}, known options are :count, :if, :new_tab" if unknown.any?
 
-        @links << Link.new(label: label, href: href, count: count, condition: options[:if], group: @group)
+        @links << Link.new(label: label, href: href, count: count, condition: options[:if], group: @group, new_tab: new_tab)
       end
 
       def method_missing(name, *, **, &)
@@ -83,7 +84,8 @@ module ActiveAdminTheme
                 links.each do |link|
                   li do
                     attributes = {href: link.href}
-                    attributes.merge!(target: "_blank", rel: "noopener noreferrer") if section.external?
+                    attributes[:"data-aat-external"] = "" if section.external?
+                    attributes.merge!(target: "_blank", rel: "noopener noreferrer") if section.external? || link.new_tab
                     a(**attributes) do
                       span link.label, class: "aat-link-label"
                       count = section.count_of(helpers, link)
@@ -166,6 +168,8 @@ module ActiveAdminTheme
         options = options.dup
         group_headings = options.delete(:group_headings) { :auto }
         options[:only] = :show unless options.key?(:only) || options.key?(:except)
+        # Above ActiveAdmin's default of 10, external links first, the same on every page.
+        options[:priority] = DEFAULT_PRIORITIES.fetch(kind) unless options.key?(:priority)
         config.sidebar_sections << Section.new(kind, title, options, block, group_headings)
       end
     end
