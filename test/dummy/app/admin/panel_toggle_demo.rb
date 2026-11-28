@@ -10,9 +10,6 @@ ActiveAdmin.register_page "Panel toggle" do
   end
 
   content do
-    # panel_toggle is opt-in: the page loads its script.
-    text_node '<script type="module">import "active_admin_theme/panel_toggle"</script>'.html_safe
-
     panel "JSON", collapsible: true, collapsed: true do
       pre "{ \"id\": 1 }", id: "json-body"
     end

@@ -27,6 +27,7 @@ module ActiveAdminTheme
     active_admin_theme/table_crisscross
     active_admin_theme/searchable_select
     active_admin_theme/confirm_dialog
+    active_admin_theme/panel_toggle
   ].freeze
 
   class << self
